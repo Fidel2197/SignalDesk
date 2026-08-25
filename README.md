@@ -33,7 +33,7 @@ debug, and resolve production problems.
 - TypeScript
 - CSS
 - Serverless API route
-- Sites/Vinext scaffold
+- Vercel-ready deployment structure
 
 ## Resume Bullet
 
