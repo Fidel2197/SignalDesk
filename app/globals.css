@@ -145,6 +145,7 @@ button {
 .mission-status span,
 .eyebrow,
 .panel-heading p,
+.panel-note,
 .rail-block p,
 .hero-copy p,
 .impact-copy,
@@ -288,11 +289,16 @@ button {
 .hero-console {
   position: relative;
   display: grid;
-  min-height: 304px;
+  min-height: 330px;
   grid-template-columns: minmax(0, 1fr) 340px;
   gap: 20px;
   overflow: hidden;
   border-radius: 8px;
+  background:
+    linear-gradient(90deg, rgba(17, 21, 26, 0.92), rgba(17, 21, 26, 0.73) 58%, rgba(17, 21, 26, 0.54)),
+    linear-gradient(180deg, rgba(7, 8, 10, 0.12), rgba(7, 8, 10, 0.76)),
+    url("/background-command.png") center / cover no-repeat,
+    var(--panel);
   padding: 22px;
 }
 
@@ -320,12 +326,12 @@ button {
 }
 
 .hero-copy h1 {
-  max-width: 940px;
+  max-width: 620px;
   margin: 0;
   color: var(--paper);
-  font-size: clamp(2.1rem, 5vw, 5.8rem);
+  font-size: clamp(2rem, 4vw, 3.55rem);
   font-weight: 950;
-  line-height: 0.92;
+  line-height: 1;
   text-wrap: balance;
 }
 
@@ -334,6 +340,34 @@ button {
   margin: 16px 0 0;
   font-size: 1.02rem;
   line-height: 1.6;
+}
+
+.info-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.info-summary article {
+  min-height: 118px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(7, 8, 10, 0.42);
+  padding: 12px;
+}
+
+.info-summary strong {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--paper);
+  font-size: 0.9rem;
+}
+
+.info-summary span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.48;
 }
 
 .hero-actions {
@@ -513,6 +547,13 @@ button {
   padding: 16px;
 }
 
+.terminal-panel {
+  background:
+    linear-gradient(180deg, rgba(23, 28, 34, 0.78), rgba(23, 28, 34, 0.93)),
+    url("/background-evidence.png") center / cover no-repeat,
+    var(--panel);
+}
+
 .panel-heading {
   display: flex;
   align-items: flex-start;
@@ -528,6 +569,13 @@ button {
 
 .panel-heading h2 {
   font-size: 1.08rem;
+}
+
+.panel-note {
+  max-width: 620px;
+  margin: 6px 0 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
 }
 
 .state-pill,
@@ -552,10 +600,12 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   background:
+    linear-gradient(180deg, rgba(12, 15, 19, 0.4), rgba(12, 15, 19, 0.78)),
     linear-gradient(90deg, rgba(244, 241, 232, 0.06) 1px, transparent 1px),
     linear-gradient(180deg, rgba(244, 241, 232, 0.06) 1px, transparent 1px),
+    url("/background-topology.png") center / cover no-repeat,
     #0c0f13;
-  background-size: 42px 42px;
+  background-size: auto, 42px 42px, 42px 42px, cover, auto;
 }
 
 .topology-map::before {
@@ -941,7 +991,15 @@ button {
   }
 
   .hero-copy h1 {
-    font-size: clamp(2rem, 13vw, 3.8rem);
+    font-size: clamp(1.9rem, 10vw, 2.85rem);
+  }
+
+  .info-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .info-summary article {
+    min-height: auto;
   }
 
   .ledger-list button {

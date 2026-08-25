@@ -434,11 +434,26 @@ export default function Home() {
           <section className="hero-console">
             <div className="hero-copy">
               <p className="eyebrow">AI incident command center</p>
-              <h1>Detect the blast radius, brief the team, and move incidents to resolution.</h1>
+              <h1>Understand incidents fast.</h1>
               <p>
-                SignalDesk turns service health, logs, severity, and ownership into a
-                clear response plan for engineering teams handling production issues.
+                SignalDesk brings service health, logs, severity, ownership, and
+                customer impact into one response workspace so teams can decide what
+                to fix first.
               </p>
+              <div className="info-summary" aria-label="What SignalDesk does">
+                <article>
+                  <strong>Ingest</strong>
+                  <span>Turns incoming alerts into tracked incidents with owner, risk, and service context.</span>
+                </article>
+                <article>
+                  <strong>Triage</strong>
+                  <span>Scores logs and severity through the API route, then writes a response recommendation.</span>
+                </article>
+                <article>
+                  <strong>Resolve</strong>
+                  <span>Keeps runbook steps, status changes, impact notes, and response history together.</span>
+                </article>
+              </div>
               <div className="hero-actions">
                 <button className="primary-action" onClick={regenerateTriage} type="button">
                   {triageLoading ? "Running triage" : `Run triage v${triageVersion}`}
@@ -478,6 +493,9 @@ export default function Home() {
                 <div>
                   <p className="eyebrow">Blast radius map</p>
                   <h2 id="topology-title">Service dependency view</h2>
+                  <p className="panel-note">
+                    Shows which systems are connected to the selected incident and where response risk can spread.
+                  </p>
                 </div>
                 <span className={`state-pill ${selectedService.status}`}>
                   {statusLabel[selectedService.status]}
@@ -524,6 +542,9 @@ export default function Home() {
                 <div>
                   <p className="eyebrow">Response brief</p>
                   <h2 id="briefing-title">{selectedIncident.id}</h2>
+                  <p className="panel-note">
+                    Converts raw signals into impact, likely cause, and the next action for the response owner.
+                  </p>
                 </div>
                 <span className={`severity ${selectedIncident.severity.toLowerCase()}`}>
                   {selectedIncident.severity}
@@ -568,6 +589,9 @@ export default function Home() {
                 <div>
                   <p className="eyebrow">Incident ledger</p>
                   <h2 id="ledger-title">Prioritized response queue</h2>
+                  <p className="panel-note">
+                    Keeps open incidents sortable by status so the active response stays organized.
+                  </p>
                 </div>
                 <div className="filter-row" aria-label="Incident status filter">
                   {statusOptions.map((option) => (
@@ -609,6 +633,9 @@ export default function Home() {
                 <div>
                   <p className="eyebrow">Runbook</p>
                   <h2 id="runbook-title">Next response steps</h2>
+                  <p className="panel-note">
+                    Breaks the selected incident into concrete actions an engineer could follow.
+                  </p>
                 </div>
               </div>
               <ol className="runbook-list">
@@ -625,6 +652,9 @@ export default function Home() {
                 <div>
                   <p className="eyebrow">Evidence terminal</p>
                   <h2 id="terminal-title">Signals used by triage</h2>
+                  <p className="panel-note">
+                    Shows the logs sent to the triage endpoint so the recommendation is explainable.
+                  </p>
                 </div>
               </div>
               <div className="terminal-lines">
@@ -639,6 +669,9 @@ export default function Home() {
                 <div>
                   <p className="eyebrow">Timeline</p>
                   <h2 id="timeline-title">Response history</h2>
+                  <p className="panel-note">
+                    Records what changed during investigation, mitigation, monitoring, and resolution.
+                  </p>
                 </div>
               </div>
               <ol className="timeline-list">
@@ -653,6 +686,9 @@ export default function Home() {
                 <div>
                   <p className="eyebrow">Severity report</p>
                   <h2 id="report-title">Weekly signal mix</h2>
+                  <p className="panel-note">
+                    Summarizes incident pressure so a team can spot trends beyond one alert.
+                  </p>
                 </div>
               </div>
               <div className="severity-report">
