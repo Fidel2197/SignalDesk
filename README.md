@@ -1,30 +1,26 @@
 # SignalDesk
 
-SignalDesk is an AI-assisted incident response dashboard built as a portfolio
-project. It presents service health, active incidents, evidence logs, response
-timelines, severity analytics, and a server-side triage endpoint in one polished
-internal-tool interface.
+SignalDesk is an AI-assisted incident command center for engineering teams. It
+turns service health, logs, severity, ownership, and customer impact into a
+clear response briefing with runbook steps, blast-radius context, and resolution
+tracking.
 
-## Why This Project Exists
+Live site: https://signaldesk-pink-two.vercel.app
 
-Most of my earlier projects show public-facing websites, student tools, games,
-and consumer app ideas. SignalDesk adds a stronger company-facing project: an
-operational dashboard that feels closer to the software teams use to monitor,
-debug, and resolve production problems.
+## What It Does
 
-## Features
-
-- Service health cards with status, latency, uptime, ownership, region, recent
-  change context, and trend visuals.
-- Incident queue with severity labels, status filtering, owner assignment, and
-  selected incident details.
-- AI triage panel with likely cause, customer impact, recommended next action,
-  confidence score, tags, and status commands.
-- Server-side triage endpoint at `/api/triage` that scores submitted incident
-  evidence and returns a response recommendation.
-- Evidence log stream and response timeline for the selected incident.
-- Analytics section with a weekly severity trend chart.
-- Responsive layout designed for desktop and mobile review.
+- Tracks service posture across payments, authentication, inventory, messaging,
+  and dependency services.
+- Prioritizes active incidents by severity, owner, status, risk, and start time.
+- Maps affected services in a topology-style blast-radius view.
+- Generates a response brief with likely cause, customer impact, recommended
+  action, and confidence.
+- Calls a server-side triage endpoint at `/api/triage` to score incident
+  evidence and return a response recommendation.
+- Provides runbook steps, evidence logs, response timeline, and weekly severity
+  reporting.
+- Supports incident state changes for investigation, mitigation, monitoring, and
+  resolution.
 
 ## Stack
 
@@ -33,14 +29,23 @@ debug, and resolve production problems.
 - TypeScript
 - CSS
 - Serverless API route
-- Vercel-ready deployment structure
+- Vercel
+
+## Engineering Highlights
+
+- Client-side incident workflow with selected incident state, filtering, alert
+  intake, and response status updates.
+- Server-side triage route that evaluates severity, service risk, and log
+  evidence before returning a priority score and recommendation.
+- Responsive command-center interface built for desktop review and mobile access.
+- Product-focused README, deployment link, and production build workflow.
 
 ## Resume Bullet
 
-Built SignalDesk, an AI-assisted incident response dashboard using Next.js,
-React, TypeScript, and a server-side triage endpoint to monitor service health,
-classify incidents, summarize evidence logs, recommend response actions, and
-track resolution status.
+Built SignalDesk, an AI-assisted incident command center using Next.js, React,
+TypeScript, and a server-side triage endpoint to monitor service health,
+classify production incidents, map blast radius, summarize evidence logs,
+recommend response actions, and track resolution status.
 
 ## Run Locally
 

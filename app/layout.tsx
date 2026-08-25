@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "SignalDesk | AI Incident Response Dashboard",
   description:
-    "A portfolio-ready incident response dashboard for service health, AI triage, evidence logs, and resolution tracking.",
+    "An AI-assisted incident command center for service health, triage, evidence logs, runbooks, and resolution tracking.",
 };
 
 export default function RootLayout({
