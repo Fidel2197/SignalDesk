@@ -281,7 +281,7 @@ const statusLabel: Record<ServiceStatus, string> = {
 };
 
 const viewDescriptions: Record<ViewName, string> = {
-  Command: "A quiet overview for deciding what needs attention first.",
+  Command: "A simple overview for deciding what needs attention first.",
   Incidents: "The active queue, filters, owners, locations, and current status.",
   Response: "The selected incident's impact, likely cause, next action, and runbook.",
   Regions: "State, regional, and global impact views for the selected services.",

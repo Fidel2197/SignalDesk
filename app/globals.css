@@ -1,20 +1,20 @@
 :root {
-  --black: #07080a;
-  --charcoal: #11151a;
-  --panel: #171c22;
-  --panel-2: #20252c;
-  --paper: #f4f1e8;
-  --paper-soft: #ded8ca;
-  --muted: #a4acb7;
-  --line: rgba(244, 241, 232, 0.14);
-  --line-strong: rgba(244, 241, 232, 0.28);
-  --acid: #d6ff3f;
-  --cyan: #36d7ff;
-  --orange: #ff8a3d;
-  --red: #ff415d;
-  --green: #5cff9d;
-  --violet: #9b7cff;
-  --shadow: 0 28px 80px rgba(0, 0, 0, 0.35);
+  --black: #f6f8fb;
+  --charcoal: #eef4f7;
+  --panel: #ffffff;
+  --panel-2: #f8fbfd;
+  --paper: #172033;
+  --paper-soft: #2d3a4f;
+  --muted: #657185;
+  --line: rgba(23, 32, 51, 0.12);
+  --line-strong: rgba(23, 32, 51, 0.22);
+  --acid: #2f9f6b;
+  --cyan: #1f88b7;
+  --orange: #df6a2e;
+  --red: #cf3650;
+  --green: #218c59;
+  --violet: #6657c7;
+  --shadow: 0 18px 48px rgba(25, 42, 70, 0.11);
 }
 
 * {
@@ -53,9 +53,9 @@ button {
 .command-shell {
   min-height: 100vh;
   background:
-    linear-gradient(90deg, rgba(214, 255, 63, 0.08) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(54, 215, 255, 0.06) 1px, transparent 1px),
-    linear-gradient(145deg, #07080a 0%, #11151a 44%, #19130f 100%);
+    linear-gradient(90deg, rgba(31, 136, 183, 0.055) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(47, 159, 107, 0.045) 1px, transparent 1px),
+    linear-gradient(145deg, #f8fbff 0%, #f0f8f5 48%, #fff8ef 100%);
   background-size: 86px 86px, 86px 86px, auto;
 }
 
@@ -1134,6 +1134,254 @@ button {
 
 .report-summary strong {
   font-size: 1.4rem;
+}
+
+.mission-bar {
+  border-bottom-color: rgba(23, 32, 51, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 32px rgba(25, 42, 70, 0.08);
+}
+
+.brand span {
+  border-color: rgba(31, 136, 183, 0.2);
+  background:
+    url("/favicon.svg") center / 30px 30px no-repeat,
+    #ffffff;
+  color: transparent;
+  font-size: 0;
+  box-shadow: 0 10px 24px rgba(31, 136, 183, 0.12);
+}
+
+.mission-nav button:hover,
+.mission-nav button.active {
+  border-color: rgba(31, 136, 183, 0.28);
+  background: #eef8fb;
+  color: var(--paper);
+}
+
+.mission-status {
+  border-color: rgba(33, 140, 89, 0.24);
+  background: #eefaf3;
+}
+
+.mission-status strong {
+  color: var(--green);
+}
+
+.rail-block,
+.hero-console,
+.stat-strip,
+.scope-panel,
+.topology-panel,
+.briefing-panel,
+.incident-ledger,
+.runbook-panel,
+.terminal-panel,
+.timeline-panel,
+.report-panel,
+.view-heading,
+.command-cards article {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 251, 253, 0.98)),
+    var(--panel);
+}
+
+.rail-block.priority {
+  background:
+    linear-gradient(135deg, rgba(207, 54, 80, 0.12), rgba(255, 255, 255, 0.9) 46%),
+    var(--panel);
+}
+
+.rail-services button,
+.info-summary article,
+.info-summary button,
+.command-cards button,
+.scope-tabs button,
+.status-actions button,
+.filter-row button,
+.ledger-list button,
+.runbook-list li,
+.timeline-list li,
+.brief-block,
+.radius-list span,
+.tag-chip,
+.report-summary {
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--paper);
+}
+
+.rail-services button:hover,
+.rail-services button.selected,
+.info-summary button:hover,
+.command-cards button:hover,
+.scope-tabs button:hover,
+.scope-tabs button.active,
+.status-actions button:hover,
+.filter-row button:hover,
+.filter-row button.active,
+.ledger-list button:hover,
+.ledger-list button.selected {
+  border-color: rgba(31, 136, 183, 0.34);
+  background: #eef8fb;
+}
+
+.rail-services b,
+.stat-strip p,
+.ledger-list b {
+  color: var(--cyan);
+}
+
+.primary-action {
+  background: #172033;
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(23, 32, 51, 0.16);
+}
+
+.primary-action:hover:not(:disabled) {
+  background: #0f617f;
+}
+
+.secondary-action {
+  border-color: rgba(23, 32, 51, 0.22);
+  background: #ffffff;
+  color: var(--paper);
+}
+
+.secondary-action:hover:not(:disabled) {
+  border-color: rgba(31, 136, 183, 0.35);
+  background: #eef8fb;
+}
+
+.hero-console {
+  min-height: 310px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.97), rgba(255, 255, 255, 0.89) 58%, rgba(245, 251, 249, 0.78)),
+    url("/background-command.png") center / cover no-repeat,
+    var(--panel);
+}
+
+.hero-console::before {
+  background:
+    linear-gradient(120deg, transparent 0 55%, rgba(47, 159, 107, 0.1) 55% 57%, transparent 57%),
+    linear-gradient(32deg, transparent 0 70%, rgba(31, 136, 183, 0.08) 70% 72%, transparent 72%);
+}
+
+.info-summary article,
+.info-summary button {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
+}
+
+.dial-core {
+  border-color: rgba(207, 54, 80, 0.2);
+  background:
+    conic-gradient(from 18deg, rgba(207, 54, 80, 0.92), rgba(223, 106, 46, 0.92), rgba(47, 159, 107, 0.78), rgba(31, 136, 183, 0.76), rgba(207, 54, 80, 0.92));
+  box-shadow:
+    inset 0 0 34px rgba(255, 255, 255, 0.55),
+    0 18px 34px rgba(207, 54, 80, 0.12);
+}
+
+.dial-core::before {
+  border-color: rgba(23, 32, 51, 0.12);
+  background: #ffffff;
+}
+
+.dial-core span {
+  position: absolute;
+  top: 70px;
+  margin: 0;
+  color: var(--orange);
+}
+
+.dial-core strong {
+  position: absolute;
+  top: 98px;
+  color: var(--paper);
+}
+
+.dial-core p {
+  position: absolute;
+  bottom: 72px;
+  margin: 0;
+}
+
+.topology-map {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.83), rgba(255, 255, 255, 0.92)),
+    linear-gradient(90deg, rgba(23, 32, 51, 0.055) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(23, 32, 51, 0.05) 1px, transparent 1px),
+    url("/background-topology.png") center / cover no-repeat,
+    #f8fbff;
+}
+
+.topology-map::before {
+  border-color: rgba(23, 32, 51, 0.16);
+}
+
+.route {
+  background: linear-gradient(90deg, rgba(31, 136, 183, 0.12), rgba(47, 159, 107, 0.72), rgba(207, 54, 80, 0.16));
+}
+
+.map-node {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--state), transparent 92%), rgba(255, 255, 255, 0.94)),
+    #ffffff;
+  color: var(--paper);
+  box-shadow: 0 14px 28px color-mix(in srgb, var(--state), transparent 84%);
+}
+
+.map-node.active {
+  outline-color: var(--cyan);
+}
+
+.scope-card {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--state), transparent 90%), transparent 54%),
+    #ffffff;
+}
+
+.brief-block {
+  background: #f8fbfd;
+}
+
+.brief-block span {
+  color: var(--paper);
+}
+
+.terminal-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.91), rgba(255, 255, 255, 0.97)),
+    url("/background-evidence.png") center / cover no-repeat,
+    var(--panel);
+}
+
+.evidence-list p {
+  border-color: rgba(33, 140, 89, 0.22);
+  background: #f0faf4;
+  color: #17633f;
+}
+
+.runbook-list li::before {
+  background: var(--cyan);
+  color: #ffffff;
+}
+
+.timeline-list li::before {
+  background: var(--green);
+  box-shadow: 0 0 14px rgba(33, 140, 89, 0.32);
+}
+
+.severity-report i {
+  background: rgba(23, 32, 51, 0.09);
+}
+
+.severity-report b {
+  background: linear-gradient(90deg, var(--cyan), var(--green), var(--orange));
+}
+
+.report-summary {
+  background:
+    linear-gradient(135deg, rgba(47, 159, 107, 0.1), transparent 48%),
+    #ffffff;
 }
 
 @media (max-width: 1200px) {
