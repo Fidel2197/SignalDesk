@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
 
-type TriageRequest = {
+type ReviewRequest = {
   incidentId?: string;
-  severity?: "SEV-1" | "SEV-2" | "SEV-3";
+  severity?: "Critical" | "High" | "Medium";
   service?: string;
   logs?: string[];
   risk?: string;
 };
 
-const severityWeight = {
-  "SEV-1": 40,
-  "SEV-2": 27,
-  "SEV-3": 14,
+const priorityWeight = {
+  Critical: 40,
+  High: 27,
+  Medium: 14,
 };
 
 function scoreEvidence(logs: string[]) {
@@ -34,19 +34,19 @@ function scoreEvidence(logs: string[]) {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as TriageRequest;
+  const body = (await request.json()) as ReviewRequest;
   const logs = body.logs ?? [];
-  const severity = body.severity ?? "SEV-3";
+  const severity = body.severity ?? "Medium";
   const evidenceScore = scoreEvidence(logs);
-  const priorityScore = Math.min(evidenceScore + severityWeight[severity], 100);
+  const priorityScore = Math.min(evidenceScore + priorityWeight[severity], 100);
   const version = Math.floor(Date.now() / 1000);
 
   const recommendation =
     priorityScore >= 90
-      ? `Escalate ${body.incidentId} for ${body.service}. Evidence points to ${body.risk?.toLowerCase() ?? "customer risk"} with enough signal to keep a bridge active and prepare rollback steps.`
+      ? `Treat ${body.service} as the top priority. The evidence points to ${body.risk?.toLowerCase() ?? "customer risk"}, so keep the response active and prepare rollback steps.`
       : priorityScore >= 70
-        ? `Keep ${body.incidentId} in active mitigation. The logs have enough signal for owner follow-up, but the response can stay focused on the selected runbook.`
-        : `Keep ${body.incidentId} in monitoring. Current evidence suggests the issue is contained, so continue checking trend lines before closing.`;
+        ? `Keep ${body.service} in active fix mode. There is enough evidence for owner follow-up, and the selected runbook is the right next move.`
+        : `Keep ${body.service} in monitoring. The issue looks contained, so watch the trend before closing it.`;
 
   return NextResponse.json({
     version,

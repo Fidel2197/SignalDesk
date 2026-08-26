@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SignalDesk | AI Incident Response Dashboard",
+  title: "SignalDesk | Incident Response Workspace",
   description:
-    "An AI-assisted incident command center for service health, triage, evidence logs, runbooks, and resolution tracking.",
+    "A response workspace for tracking active incidents by service, location, owner, risk, and next step.",
 };
 
 export default function RootLayout({

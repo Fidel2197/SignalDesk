@@ -24,6 +24,7 @@
 html {
   min-height: 100%;
   background: var(--black);
+  scroll-behavior: smooth;
 }
 
 body {
@@ -111,6 +112,7 @@ button {
 .primary-action,
 .secondary-action,
 .filter-row button,
+.scope-tabs button,
 .status-actions button {
   border-radius: 6px;
 }
@@ -172,6 +174,7 @@ button {
   grid-template-columns: 238px minmax(0, 1fr);
   gap: 18px;
   padding: 18px;
+  scroll-margin-top: 88px;
 }
 
 .signal-rail {
@@ -185,6 +188,7 @@ button {
 .rail-block,
 .hero-console,
 .stat-strip,
+.scope-panel,
 .topology-panel,
 .briefing-panel,
 .incident-ledger,
@@ -255,19 +259,22 @@ button {
 
 .rail-services i.stable,
 .state-pill.stable,
-.map-node.stable {
+.map-node.stable,
+.scope-card.stable {
   --state: var(--green);
 }
 
 .rail-services i.watch,
 .state-pill.watch,
-.map-node.watch {
+.map-node.watch,
+.scope-card.watch {
   --state: var(--orange);
 }
 
 .rail-services i.critical,
 .state-pill.critical,
-.map-node.critical {
+.map-node.critical,
+.scope-card.critical {
   --state: var(--red);
 }
 
@@ -329,9 +336,9 @@ button {
   max-width: 620px;
   margin: 0;
   color: var(--paper);
-  font-size: clamp(2rem, 4vw, 3.55rem);
+  font-size: clamp(1.7rem, 2.6vw, 2.35rem);
   font-weight: 950;
-  line-height: 1;
+  line-height: 1.05;
   text-wrap: balance;
 }
 
@@ -524,6 +531,12 @@ button {
   gap: 16px;
 }
 
+.scope-panel {
+  border-radius: 8px;
+  padding: 16px;
+  scroll-margin-top: 88px;
+}
+
 .operations-layout {
   grid-template-columns: minmax(0, 1.1fr) minmax(390px, 0.9fr);
 }
@@ -547,6 +560,12 @@ button {
   padding: 16px;
 }
 
+.briefing-panel,
+.incident-ledger,
+.report-panel {
+  scroll-margin-top: 88px;
+}
+
 .terminal-panel {
   background:
     linear-gradient(180deg, rgba(23, 28, 34, 0.78), rgba(23, 28, 34, 0.93)),
@@ -558,6 +577,7 @@ button {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 14px;
   margin-bottom: 14px;
 }
@@ -582,6 +602,61 @@ button {
 .severity {
   border-radius: 999px;
   white-space: nowrap;
+}
+
+.scope-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.scope-tabs button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  background: rgba(244, 241, 232, 0.07);
+  color: var(--paper);
+  padding: 0 11px;
+  font-weight: 850;
+}
+
+.scope-tabs button:hover,
+.scope-tabs button.active {
+  border-color: rgba(54, 215, 255, 0.5);
+  background: rgba(54, 215, 255, 0.1);
+}
+
+.scope-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.scope-card {
+  display: grid;
+  align-content: start;
+  min-height: 136px;
+  border: 1px solid color-mix(in srgb, var(--state), transparent 58%);
+  border-left: 4px solid var(--state);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--state), transparent 88%), transparent 54%),
+    rgba(7, 8, 10, 0.32);
+  padding: 12px;
+}
+
+.scope-card strong {
+  margin-top: 15px;
+  color: var(--paper);
+  font-size: 1.02rem;
+}
+
+.scope-card p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
 }
 
 .state-pill {
@@ -811,17 +886,17 @@ button {
   font-weight: 950;
 }
 
-.severity.sev-1 {
+.severity.critical {
   background: rgba(255, 65, 93, 0.16);
   color: var(--red);
 }
 
-.severity.sev-2 {
+.severity.high {
   background: rgba(255, 138, 61, 0.16);
   color: var(--orange);
 }
 
-.severity.sev-3 {
+.severity.medium {
   background: rgba(54, 215, 255, 0.16);
   color: var(--cyan);
 }
@@ -882,20 +957,19 @@ button {
   content: "";
 }
 
-.terminal-lines {
+.evidence-list {
   display: grid;
   gap: 7px;
 }
 
-.terminal-lines code {
+.evidence-list p {
   display: block;
-  overflow-x: auto;
   border: 1px solid rgba(92, 255, 157, 0.18);
   border-radius: 6px;
   background: #050607;
   color: #b8ffd3;
+  margin: 0;
   padding: 10px;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.82rem;
   line-height: 1.5;
 }
@@ -934,6 +1008,10 @@ button {
   .telemetry-grid,
   .hero-console {
     grid-template-columns: 1fr;
+  }
+
+  .scope-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .signal-rail {
@@ -991,7 +1069,7 @@ button {
   }
 
   .hero-copy h1 {
-    font-size: clamp(1.9rem, 10vw, 2.85rem);
+    font-size: clamp(1.55rem, 7vw, 2.05rem);
   }
 
   .info-summary {
@@ -1021,6 +1099,7 @@ button {
   }
 
   .hero-console,
+  .scope-panel,
   .topology-panel,
   .briefing-panel,
   .incident-ledger,
@@ -1033,8 +1112,13 @@ button {
 
   .hero-actions button,
   .status-actions button,
-  .filter-row button {
+  .filter-row button,
+  .scope-tabs button {
     width: 100%;
+  }
+
+  .scope-grid {
+    grid-template-columns: 1fr;
   }
 
   .topology-map {

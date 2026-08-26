@@ -4,13 +4,16 @@ import { useMemo, useState } from "react";
 
 type ServiceStatus = "stable" | "watch" | "critical";
 type IncidentStatus = "Investigating" | "Mitigating" | "Monitoring" | "Resolved";
-type Severity = "SEV-1" | "SEV-2" | "SEV-3";
+type Severity = "Critical" | "High" | "Medium";
+type CoverageScope = "U.S. States" | "U.S. Regions" | "Global";
 
 type Service = {
   name: string;
   code: string;
   status: ServiceStatus;
   region: string;
+  state: string;
+  city: string;
   owner: string;
   latency: number;
   load: number;
@@ -39,13 +42,21 @@ type Incident = {
   timeline: string[];
 };
 
+type ScopeRow = {
+  place: string;
+  status: ServiceStatus;
+  detail: string;
+};
+
 const services: Service[] = [
   {
-    name: "Payments API",
+    name: "Checkout Payments",
     code: "PAY",
     status: "watch",
-    region: "us-central",
-    owner: "Platform",
+    region: "Central U.S.",
+    state: "Texas",
+    city: "Dallas",
+    owner: "Platform Team",
     latency: 412,
     load: 78,
     uptime: "99.91%",
@@ -53,11 +64,13 @@ const services: Service[] = [
     y: 38,
   },
   {
-    name: "Auth Gateway",
+    name: "Login Service",
     code: "AUTH",
     status: "stable",
-    region: "global",
-    owner: "Security",
+    region: "National",
+    state: "All states",
+    city: "Edge network",
+    owner: "Security Team",
     latency: 128,
     load: 42,
     uptime: "99.99%",
@@ -68,8 +81,10 @@ const services: Service[] = [
     name: "Inventory Sync",
     code: "INV",
     status: "critical",
-    region: "us-east",
-    owner: "Commerce",
+    region: "Eastern U.S.",
+    state: "New York",
+    city: "Newark",
+    owner: "Commerce Team",
     latency: 860,
     load: 91,
     uptime: "98.72%",
@@ -77,11 +92,13 @@ const services: Service[] = [
     y: 55,
   },
   {
-    name: "Notification Worker",
+    name: "Notifications",
     code: "MSG",
     status: "stable",
-    region: "us-west",
-    owner: "Growth",
+    region: "Western U.S.",
+    state: "California",
+    city: "San Jose",
+    owner: "Growth Team",
     latency: 205,
     load: 57,
     uptime: "99.95%",
@@ -92,8 +109,10 @@ const services: Service[] = [
     name: "Tax Lookup",
     code: "TAX",
     status: "watch",
-    region: "us-central",
-    owner: "Platform",
+    region: "Central U.S.",
+    state: "Illinois",
+    city: "Chicago",
+    owner: "Platform Team",
     latency: 522,
     load: 68,
     uptime: "99.82%",
@@ -105,102 +124,104 @@ const services: Service[] = [
 const initialIncidents: Incident[] = [
   {
     id: "INC-1048",
-    title: "Checkout latency above response threshold",
-    severity: "SEV-2",
+    title: "Checkout is slowing down",
+    severity: "High",
     status: "Investigating",
-    service: "Payments API",
-    owner: "Maya Chen",
+    service: "Checkout Payments",
+    owner: "Platform Team",
     started: "14 min ago",
     risk: "Revenue impact",
     confidence: 92,
-    impact: "Checkout remains available, but confirmation requests are waiting on the tax lookup path.",
+    impact:
+      "Customers can still check out, but payment confirmation is taking longer than normal.",
     rootCause:
-      "The latency increase lines up with deploy 6f93c2 and a tax-region cache change. Error rate is steady, which points to a slow dependency rather than an outage.",
+      "A recent tax lookup change is slowing down the checkout path. Payments are still going through, so the first move is to reduce delay before it becomes an outage.",
     nextAction:
-      "Shift a controlled slice of checkout traffic back to the previous worker and compare tax lookup timing across both pools.",
-    blastRadius: ["Checkout confirmation", "Tax lookup", "Order receipt timing"],
-    tags: ["api", "latency", "checkout"],
+      "Move a small slice of checkout traffic back to the previous worker and compare confirmation speed for ten minutes.",
+    blastRadius: ["Checkout confirmation", "Tax lookup", "Order receipts"],
+    tags: ["checkout", "latency", "payments"],
     logs: [
-      "17:06:12 payments-api p95=412ms p99=932ms state=watch",
-      "17:07:03 tax-lookup retry_count=124 timeout_rate=3.8%",
-      "17:08:26 edge-router shifted checkout-us-central to pool-b",
-      "17:09:44 deploy 6f93c2 enabled tax_region_cache",
+      "17:06 Checkout latency reached 932 ms at peak",
+      "17:07 Tax lookup timeout rate rose to 3.8%",
+      "17:08 Texas checkout traffic moved to backup pool",
+      "17:09 Recent tax cache change matched the slowdown",
     ],
     runbook: [
-      "Compare checkout pool latency against last stable deployment.",
-      "Route 20% of checkout traffic to the previous worker.",
-      "Watch payment confirmation and tax lookup p95 for 10 minutes.",
-      "Promote rollback if customer confirmation delay remains elevated.",
+      "Compare current checkout speed with the last stable release.",
+      "Move 20% of checkout traffic to the previous worker.",
+      "Watch payment confirmation and tax lookup speed for 10 minutes.",
+      "Roll back the new tax lookup change if delays stay high.",
     ],
     timeline: [
-      "Alert opened from checkout p95 threshold",
-      "Deployment drift matched by response engine",
-      "Platform owner paged",
+      "Checkout slowdown detected",
+      "Platform Team assigned",
+      "Tax lookup change matched to the timing",
     ],
   },
   {
     id: "INC-1047",
-    title: "Inventory queue backlog increasing",
-    severity: "SEV-1",
+    title: "Inventory updates are falling behind",
+    severity: "Critical",
     status: "Mitigating",
     service: "Inventory Sync",
-    owner: "Andre Patel",
+    owner: "Commerce Team",
     started: "31 min ago",
     risk: "Order accuracy",
     confidence: 88,
-    impact: "A subset of product pages may show stale availability while delayed events replay.",
+    impact:
+      "Some product pages may show old availability while delayed inventory updates catch up.",
     rootCause:
-      "A queue policy update reduced consumer concurrency during a high-volume order window. Backlog is concentrated in east-region warehouse events.",
+      "A worker setting cut the number of inventory jobs running at the same time during a busy order window.",
     nextAction:
-      "Restore worker concurrency to baseline, replay delayed inventory events, and keep stale availability banners active until lag clears.",
-    blastRadius: ["Warehouse events", "Product availability", "Checkout stock checks"],
-    tags: ["queue", "orders", "sync"],
+      "Restore normal worker capacity, replay delayed inventory updates, and keep stale-stock warnings visible until the queue clears.",
+    blastRadius: ["Warehouse events", "Product availability", "Stock checks"],
+    tags: ["inventory", "queue", "orders"],
     logs: [
-      "16:48:01 inventory-sync queue_depth=18422 consumers=8",
-      "16:51:20 warehouse-east lag=18m dead_letter=337",
-      "16:54:12 policy update max_consumers 18 -> 8",
-      "17:02:33 replay window prepared for delayed inventory events",
+      "16:48 Inventory queue reached 18,422 waiting updates",
+      "16:51 New York warehouse lag reached 18 minutes",
+      "16:54 Worker capacity changed from 18 to 8",
+      "17:02 Replay window prepared for delayed inventory updates",
     ],
     runbook: [
-      "Restore consumer concurrency to 18.",
-      "Replay delayed events from the dead-letter queue.",
-      "Compare warehouse-east lag with warehouse-west baseline.",
-      "Close stale availability banner after lag drops under 90 seconds.",
+      "Restore inventory worker capacity to normal.",
+      "Replay delayed updates from the waiting queue.",
+      "Compare New York lag against the western warehouse baseline.",
+      "Remove stale-stock warnings after lag drops under 90 seconds.",
     ],
     timeline: [
-      "Incident escalated to SEV-1",
-      "Commerce owner joined bridge",
-      "Concurrency rollback prepared",
+      "Critical inventory incident opened",
+      "Commerce Team joined response",
+      "Worker capacity rollback prepared",
     ],
   },
   {
     id: "INC-1046",
-    title: "Push notification delivery dip",
-    severity: "SEV-3",
+    title: "Notifications are delayed",
+    severity: "Medium",
     status: "Monitoring",
-    service: "Notification Worker",
-    owner: "Nia Brooks",
+    service: "Notifications",
+    owner: "Growth Team",
     started: "52 min ago",
-    risk: "Engagement delay",
+    risk: "Customer messaging delay",
     confidence: 76,
-    impact: "Receipt and marketing notifications may arrive several minutes late.",
+    impact: "Receipts and marketing notifications may arrive several minutes late.",
     rootCause:
-      "External provider throttling increased retry volume. Internal workers are healthy and the queue is burning down.",
+      "A delivery provider started throttling messages. Internal workers are healthy and the waiting queue is shrinking.",
     nextAction:
-      "Keep nonessential campaigns paused until provider rate limits normalize and retry volume stays below threshold.",
-    blastRadius: ["Receipt notifications", "Campaign sends", "Provider retry queue"],
-    tags: ["worker", "provider", "retry"],
+      "Keep nonessential campaigns paused until provider limits normalize and receipt messages stay current.",
+    blastRadius: ["Receipt messages", "Campaign sends", "Retry queue"],
+    tags: ["notifications", "provider", "retry"],
     logs: [
-      "16:15:44 notification-worker retry_queue=2180 provider=throttled",
-      "16:24:18 campaign_scheduler paused nonessential sends",
-      "16:39:02 provider throttle window reduced to 12%",
-      "17:01:58 retry_queue=620 trend=down",
+      "16:15 Notification retry queue reached 2,180 messages",
+      "16:24 Nonessential campaigns paused",
+      "16:39 Provider throttle window reduced to 12%",
+      "17:01 Retry queue down to 620 and still falling",
     ],
     runbook: [
       "Keep nonessential campaigns paused.",
-      "Monitor retry queue burn-down.",
-      "Verify receipts are delivered before campaign traffic resumes.",
-      "Restore scheduled sends after provider throttling clears.",
+      "Watch the retry queue until it keeps falling.",
+      "Confirm receipts deliver before campaign traffic resumes.",
+      "Resume scheduled sends after provider throttling clears.",
     ],
     timeline: [
       "Provider throttling detected",
@@ -218,21 +239,50 @@ const statusOptions: Array<"All" | IncidentStatus> = [
   "Resolved",
 ];
 
-const navItems = ["Command", "Incidents", "Response", "Telemetry", "Reports"];
+const navItems = [
+  { label: "Command", target: "command" },
+  { label: "Incidents", target: "incidents" },
+  { label: "Response", target: "response" },
+  { label: "Regions", target: "regions" },
+  { label: "Reports", target: "reports" },
+];
 
 const responseStats = [
-  { label: "Active bridge", value: "3", detail: "teams engaged" },
-  { label: "Containment", value: "71%", detail: "blast radius reduced" },
-  { label: "MTTR trend", value: "18m", detail: "6m faster today" },
-  { label: "Evidence score", value: "92", detail: "high signal quality" },
+  { label: "Open incidents", value: "3", detail: "need attention" },
+  { label: "Contained", value: "71%", detail: "risk reduced" },
+  { label: "Avg fix time", value: "18m", detail: "today" },
+  { label: "Clear evidence", value: "92%", detail: "enough to act" },
 ];
 
-const severityBars = [
-  { label: "SEV-1", value: 32 },
-  { label: "SEV-2", value: 64 },
-  { label: "SEV-3", value: 46 },
+const priorityBars = [
+  { label: "Critical", value: 32 },
+  { label: "High", value: 64 },
+  { label: "Medium", value: 46 },
   { label: "Noise", value: 22 },
 ];
+
+const coverageOptions: CoverageScope[] = ["U.S. States", "U.S. Regions", "Global"];
+
+const coverageRows: Record<CoverageScope, ScopeRow[]> = {
+  "U.S. States": [
+    { place: "Texas", status: "watch", detail: "Checkout traffic is slower than normal." },
+    { place: "New York", status: "critical", detail: "Inventory updates need immediate attention." },
+    { place: "California", status: "stable", detail: "Notification workers are healthy." },
+    { place: "Illinois", status: "watch", detail: "Tax lookup delay is being reviewed." },
+  ],
+  "U.S. Regions": [
+    { place: "Central U.S.", status: "watch", detail: "Checkout and tax lookup are under review." },
+    { place: "Eastern U.S.", status: "critical", detail: "Inventory replay is behind." },
+    { place: "Western U.S.", status: "stable", detail: "No active customer impact." },
+    { place: "National", status: "stable", detail: "Login traffic is normal." },
+  ],
+  Global: [
+    { place: "North America", status: "watch", detail: "Checkout traffic has the only active slowdown." },
+    { place: "Europe", status: "stable", detail: "No active incident reported." },
+    { place: "Asia-Pacific", status: "stable", detail: "Normal traffic pattern." },
+    { place: "South America", status: "stable", detail: "No customer impact reported." },
+  ],
+};
 
 const statusLabel: Record<ServiceStatus, string> = {
   stable: "Stable",
@@ -243,13 +293,13 @@ const statusLabel: Record<ServiceStatus, string> = {
 export default function Home() {
   const [activeView, setActiveView] = useState("Command");
   const [filter, setFilter] = useState<(typeof statusOptions)[number]>("All");
+  const [coverageScope, setCoverageScope] = useState<CoverageScope>("U.S. States");
   const [incidents, setIncidents] = useState(initialIncidents);
   const [selectedId, setSelectedId] = useState(initialIncidents[0].id);
-  const [triageVersion, setTriageVersion] = useState(1);
-  const [triageNote, setTriageNote] = useState(
-    "Response engine standing by. Run triage to compare the selected incident against service logs, ownership, severity, and customer impact.",
+  const [reviewNote, setReviewNote] = useState(
+    "Run a review to turn the selected incident into a plain next step.",
   );
-  const [triageLoading, setTriageLoading] = useState(false);
+  const [reviewLoading, setReviewLoading] = useState(false);
 
   const selectedIncident =
     incidents.find((incident) => incident.id === selectedId) ?? incidents[0];
@@ -270,6 +320,16 @@ export default function Home() {
     (incident) => incident.status !== "Resolved",
   ).length;
 
+  const selectedPriority = selectedIncident.severity;
+
+  function scrollToSection(label: string, target: string) {
+    setActiveView(label);
+    document.getElementById(target)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
   function updateIncidentStatus(status: IncidentStatus) {
     setIncidents((current) =>
       current.map((incident) =>
@@ -277,10 +337,7 @@ export default function Home() {
           ? {
               ...incident,
               status,
-              timeline: [
-                `${status} state recorded by incident commander`,
-                ...incident.timeline,
-              ],
+              timeline: [`Status changed to ${status}`, ...incident.timeline],
             }
           : incident,
       ),
@@ -290,45 +347,45 @@ export default function Home() {
   function ingestAlert() {
     const nextIncident: Incident = {
       id: `INC-${1049 + incidents.length}`,
-      title: "Mobile auth retry burst",
-      severity: "SEV-2",
+      title: "Mobile login retry spike",
+      severity: "High",
       status: "Investigating",
-      service: "Auth Gateway",
-      owner: "Unassigned",
+      service: "Login Service",
+      owner: "Security Team",
       started: "just now",
       risk: "Login reliability",
       confidence: 81,
-      impact: "Some mobile users may need to retry sign-in after app resume.",
+      impact: "Some mobile users may need to retry sign-in after reopening the app.",
       rootCause:
-        "Mobile build 8.14.2 is sending expired refresh tokens after resume. Web authentication is unaffected.",
+        "The newest mobile build is sending expired refresh tokens after app resume. Web login is not affected.",
       nextAction:
-        "Rate-limit noisy retries, page mobile release ownership, and verify refresh token rotation in the latest build.",
-      blastRadius: ["Mobile login", "Token refresh", "Session resume"],
-      tags: ["auth", "mobile", "tokens"],
+        "Limit repeated retries, alert the mobile release owner, and compare token refresh behavior with the previous build.",
+      blastRadius: ["Mobile login", "Token refresh", "App resume"],
+      tags: ["login", "mobile", "tokens"],
       logs: [
-        "17:18:04 auth-gateway token_refresh failures=186 device=mobile",
-        "17:18:21 mobile build 8.14.2 elevated retry loop",
-        "17:18:59 web login success_rate=99.8%",
+        "17:18 Mobile token refresh failures rose to 186",
+        "17:18 Mobile build 8.14.2 matched the retry loop",
+        "17:19 Web login success stayed at 99.8%",
       ],
       runbook: [
-        "Identify mobile app version tied to retry spike.",
-        "Rate-limit repeated token refresh failures.",
-        "Notify mobile release owner and compare against previous build.",
-        "Keep web auth metrics separate from mobile retry noise.",
+        "Confirm which mobile app version created the retry spike.",
+        "Limit repeated token refresh retries.",
+        "Notify the mobile release owner.",
+        "Keep web login metrics separate from mobile retry noise.",
       ],
-      timeline: ["Alert ingested from auth telemetry", "Owner assignment pending"],
+      timeline: ["New login alert added", "Owner assignment pending"],
     };
 
     setIncidents((current) => [nextIncident, ...current]);
     setSelectedId(nextIncident.id);
-    setActiveView("Response");
+    requestAnimationFrame(() => scrollToSection("Response", "response"));
   }
 
-  async function regenerateTriage() {
-    setTriageLoading(true);
+  async function reviewIncident() {
+    setReviewLoading(true);
 
     try {
-      const response = await fetch("/api/triage", {
+      const response = await fetch("/api/review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -341,23 +398,20 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error("Triage request failed");
+        throw new Error("Review request failed");
       }
 
       const payload = (await response.json()) as {
-        version: number;
         recommendation: string;
       };
 
-      setTriageVersion(payload.version);
-      setTriageNote(payload.recommendation);
+      setReviewNote(payload.recommendation);
     } catch {
-      setTriageVersion((version) => version + 1);
-      setTriageNote(
-        "Local evidence review kept the current response action active while the selected service remains under watch.",
+      setReviewNote(
+        "Keep the current response plan active and watch the selected service until the trend improves.",
       );
     } finally {
-      setTriageLoading(false);
+      setReviewLoading(false);
     }
   }
 
@@ -372,12 +426,12 @@ export default function Home() {
         <nav className="mission-nav" aria-label="Primary sections">
           {navItems.map((item) => (
             <button
-              className={activeView === item ? "active" : ""}
-              key={item}
-              onClick={() => setActiveView(item)}
+              className={activeView === item.label ? "active" : ""}
+              key={item.label}
+              onClick={() => scrollToSection(item.label, item.target)}
               type="button"
             >
-              {item}
+              {item.label}
             </button>
           ))}
         </nav>
@@ -389,15 +443,17 @@ export default function Home() {
       </header>
 
       <section className="command-grid" id="command">
-        <aside className="signal-rail" aria-label="Response roster">
+        <aside className="signal-rail" aria-label="Response summary">
           <div className="rail-block priority">
-            <span className="eyebrow">Current commander</span>
+            <span className="eyebrow">On-call owner</span>
             <strong>{selectedIncident.owner}</strong>
-            <p>{selectedIncident.service}</p>
+            <p>
+              {selectedIncident.service} / {selectedService.state}
+            </p>
           </div>
 
           <div className="rail-block">
-            <span className="eyebrow">Service posture</span>
+            <span className="eyebrow">Services</span>
             <div className="rail-services">
               {services.map((service) => (
                 <button
@@ -422,10 +478,10 @@ export default function Home() {
           </div>
 
           <div className="rail-block">
-            <span className="eyebrow">Hand-off packet</span>
+            <span className="eyebrow">Quick summary</span>
             <p className="handoff-copy">
-              {selectedIncident.severity} incident on {selectedIncident.service}.
-              Risk: {selectedIncident.risk}. Status: {selectedIncident.status}.
+              Priority: {selectedPriority}. Risk: {selectedIncident.risk}. Status:{" "}
+              {selectedIncident.status}.
             </p>
           </div>
         </aside>
@@ -433,46 +489,50 @@ export default function Home() {
         <section className="war-room">
           <section className="hero-console">
             <div className="hero-copy">
-              <p className="eyebrow">AI incident command center</p>
-              <h1>Understand incidents fast.</h1>
+              <p className="eyebrow">Incident response workspace</p>
+              <h1>See what broke, where it is, and what to do next.</h1>
               <p>
-                SignalDesk brings service health, logs, severity, ownership, and
-                customer impact into one response workspace so teams can decide what
-                to fix first.
+                SignalDesk helps response teams track active incidents by service,
+                location, customer risk, owner, and next step.
               </p>
               <div className="info-summary" aria-label="What SignalDesk does">
                 <article>
-                  <strong>Ingest</strong>
-                  <span>Turns incoming alerts into tracked incidents with owner, risk, and service context.</span>
+                  <strong>Command</strong>
+                  <span>Shows the main incident, affected service, owner, and risk at a glance.</span>
                 </article>
                 <article>
-                  <strong>Triage</strong>
-                  <span>Scores logs and severity through the API route, then writes a response recommendation.</span>
+                  <strong>Regions</strong>
+                  <span>Switches between U.S. states, U.S. regions, and global coverage.</span>
                 </article>
                 <article>
-                  <strong>Resolve</strong>
-                  <span>Keeps runbook steps, status changes, impact notes, and response history together.</span>
+                  <strong>Response</strong>
+                  <span>Turns evidence into a simple plan the team can follow and update.</span>
                 </article>
               </div>
               <div className="hero-actions">
-                <button className="primary-action" onClick={regenerateTriage} type="button">
-                  {triageLoading ? "Running triage" : `Run triage v${triageVersion}`}
+                <button
+                  className="primary-action"
+                  disabled={reviewLoading}
+                  onClick={reviewIncident}
+                  type="button"
+                >
+                  {reviewLoading ? "Reviewing" : "Review incident"}
                 </button>
                 <button className="secondary-action" onClick={ingestAlert} type="button">
-                  Ingest alert
+                  Add incoming alert
                 </button>
               </div>
             </div>
 
             <div className="impact-dial" aria-label="Selected incident impact">
               <div className="dial-core">
-                <span>{selectedIncident.severity}</span>
+                <span>{selectedPriority}</span>
                 <strong>{selectedIncident.confidence}%</strong>
-                <p>confidence</p>
+                <p>clear evidence</p>
               </div>
               <div className="dial-meta">
                 <span>{selectedIncident.id}</span>
-                <b>{selectedIncident.risk}</b>
+                <b>{selectedService.state}</b>
               </div>
             </div>
           </section>
@@ -487,14 +547,47 @@ export default function Home() {
             ))}
           </section>
 
+          <section className="scope-panel" id="regions" aria-labelledby="regions-title">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Coverage scope</p>
+                <h2 id="regions-title">Choose how wide the incident view should be</h2>
+                <p className="panel-note">
+                  Use states for local impact, regions for routing decisions, and global for worldwide service health.
+                </p>
+              </div>
+              <div className="scope-tabs" aria-label="Coverage scope options">
+                {coverageOptions.map((option) => (
+                  <button
+                    className={coverageScope === option ? "active" : ""}
+                    key={option}
+                    onClick={() => setCoverageScope(option)}
+                    type="button"
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="scope-grid">
+              {coverageRows[coverageScope].map((row) => (
+                <article className={`scope-card ${row.status}`} key={row.place}>
+                  <span className={`state-pill ${row.status}`}>{statusLabel[row.status]}</span>
+                  <strong>{row.place}</strong>
+                  <p>{row.detail}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
           <section className="operations-layout">
             <article className="topology-panel" aria-labelledby="topology-title">
               <div className="panel-heading">
                 <div>
-                  <p className="eyebrow">Blast radius map</p>
-                  <h2 id="topology-title">Service dependency view</h2>
+                  <p className="eyebrow">What is affected</p>
+                  <h2 id="topology-title">Service map</h2>
                   <p className="panel-note">
-                    Shows which systems are connected to the selected incident and where response risk can spread.
+                    Shows the systems connected to the selected incident and where risk can spread.
                   </p>
                 </div>
                 <span className={`state-pill ${selectedService.status}`}>
@@ -525,7 +618,7 @@ export default function Home() {
                     type="button"
                   >
                     <span>{service.code}</span>
-                    <small>{service.latency}ms</small>
+                    <small>{service.state}</small>
                   </button>
                 ))}
               </div>
@@ -537,17 +630,17 @@ export default function Home() {
               </div>
             </article>
 
-            <article className="briefing-panel" aria-labelledby="briefing-title">
+            <article className="briefing-panel" id="response" aria-labelledby="briefing-title">
               <div className="panel-heading">
                 <div>
-                  <p className="eyebrow">Response brief</p>
+                  <p className="eyebrow">Response plan</p>
                   <h2 id="briefing-title">{selectedIncident.id}</h2>
                   <p className="panel-note">
-                    Converts raw signals into impact, likely cause, and the next action for the response owner.
+                    Plain summary of what is wrong, who owns it, and what should happen next.
                   </p>
                 </div>
                 <span className={`severity ${selectedIncident.severity.toLowerCase()}`}>
-                  {selectedIncident.severity}
+                  {selectedPriority}
                 </span>
               </div>
 
@@ -555,42 +648,42 @@ export default function Home() {
               <p className="impact-copy">{selectedIncident.impact}</p>
 
               <div className="brief-block">
-                <span>Likely cause</span>
+                <span>What is happening</span>
                 <p>{selectedIncident.rootCause}</p>
               </div>
 
               <div className="brief-block action">
-                <span>Recommended action</span>
+                <span>Best next step</span>
                 <p>{selectedIncident.nextAction}</p>
               </div>
 
               <div className="brief-block engine">
-                <span>Response engine</span>
-                <p>{triageNote}</p>
+                <span>Review result</span>
+                <p>{reviewNote}</p>
               </div>
 
               <div className="status-actions">
                 <button onClick={() => updateIncidentStatus("Mitigating")} type="button">
-                  Mitigate
+                  Mark mitigating
                 </button>
                 <button onClick={() => updateIncidentStatus("Monitoring")} type="button">
-                  Monitor
+                  Mark monitoring
                 </button>
                 <button onClick={() => updateIncidentStatus("Resolved")} type="button">
-                  Resolve
+                  Mark resolved
                 </button>
               </div>
             </article>
           </section>
 
           <section className="workbench">
-            <article className="incident-ledger" aria-labelledby="ledger-title">
+            <article className="incident-ledger" id="incidents" aria-labelledby="ledger-title">
               <div className="panel-heading">
                 <div>
-                  <p className="eyebrow">Incident ledger</p>
-                  <h2 id="ledger-title">Prioritized response queue</h2>
+                  <p className="eyebrow">Incidents</p>
+                  <h2 id="ledger-title">Active response queue</h2>
                   <p className="panel-note">
-                    Keeps open incidents sortable by status so the active response stays organized.
+                    Click an incident to update the service map, response plan, runbook, and evidence notes.
                   </p>
                 </div>
                 <div className="filter-row" aria-label="Incident status filter">
@@ -608,23 +701,29 @@ export default function Home() {
               </div>
 
               <div className="ledger-list">
-                {filteredIncidents.map((incident) => (
-                  <button
-                    className={selectedIncident.id === incident.id ? "selected" : ""}
-                    key={incident.id}
-                    onClick={() => setSelectedId(incident.id)}
-                    type="button"
-                  >
-                    <span className={`severity ${incident.severity.toLowerCase()}`}>
-                      {incident.severity}
-                    </span>
-                    <strong>{incident.title}</strong>
-                    <small>
-                      {incident.service} / {incident.owner} / {incident.started}
-                    </small>
-                    <b>{incident.status}</b>
-                  </button>
-                ))}
+                {filteredIncidents.map((incident) => {
+                  const incidentService =
+                    services.find((service) => service.name === incident.service) ??
+                    services[0];
+
+                  return (
+                    <button
+                      className={selectedIncident.id === incident.id ? "selected" : ""}
+                      key={incident.id}
+                      onClick={() => setSelectedId(incident.id)}
+                      type="button"
+                    >
+                      <span className={`severity ${incident.severity.toLowerCase()}`}>
+                        {incident.severity}
+                      </span>
+                      <strong>{incident.title}</strong>
+                      <small>
+                        {incident.service} / {incidentService.state} / {incident.started}
+                      </small>
+                      <b>{incident.status}</b>
+                    </button>
+                  );
+                })}
               </div>
             </article>
 
@@ -632,9 +731,9 @@ export default function Home() {
               <div className="panel-heading">
                 <div>
                   <p className="eyebrow">Runbook</p>
-                  <h2 id="runbook-title">Next response steps</h2>
+                  <h2 id="runbook-title">Steps to follow</h2>
                   <p className="panel-note">
-                    Breaks the selected incident into concrete actions an engineer could follow.
+                    Concrete actions the assigned team can take right now.
                   </p>
                 </div>
               </div>
@@ -650,16 +749,16 @@ export default function Home() {
             <article className="terminal-panel" aria-labelledby="terminal-title">
               <div className="panel-heading">
                 <div>
-                  <p className="eyebrow">Evidence terminal</p>
-                  <h2 id="terminal-title">Signals used by triage</h2>
+                  <p className="eyebrow">Evidence</p>
+                  <h2 id="terminal-title">Signals checked</h2>
                   <p className="panel-note">
-                    Shows the logs sent to the triage endpoint so the recommendation is explainable.
+                    Short evidence notes that explain why the response plan was chosen.
                   </p>
                 </div>
               </div>
-              <div className="terminal-lines">
+              <div className="evidence-list">
                 {selectedIncident.logs.map((log) => (
-                  <code key={log}>{log}</code>
+                  <p key={log}>{log}</p>
                 ))}
               </div>
             </article>
@@ -670,7 +769,7 @@ export default function Home() {
                   <p className="eyebrow">Timeline</p>
                   <h2 id="timeline-title">Response history</h2>
                   <p className="panel-note">
-                    Records what changed during investigation, mitigation, monitoring, and resolution.
+                    Records what changed as the team investigates, fixes, watches, and closes the incident.
                   </p>
                 </div>
               </div>
@@ -681,18 +780,18 @@ export default function Home() {
               </ol>
             </article>
 
-            <article className="report-panel" aria-labelledby="report-title">
+            <article className="report-panel" id="reports" aria-labelledby="report-title">
               <div className="panel-heading">
                 <div>
-                  <p className="eyebrow">Severity report</p>
-                  <h2 id="report-title">Weekly signal mix</h2>
+                  <p className="eyebrow">Reports</p>
+                  <h2 id="report-title">Weekly priority mix</h2>
                   <p className="panel-note">
-                    Summarizes incident pressure so a team can spot trends beyond one alert.
+                    Shows whether the team is mostly handling critical work, normal issues, or low-value noise.
                   </p>
                 </div>
               </div>
               <div className="severity-report">
-                {severityBars.map((bar) => (
+                {priorityBars.map((bar) => (
                   <div key={bar.label}>
                     <span>{bar.label}</span>
                     <i>
