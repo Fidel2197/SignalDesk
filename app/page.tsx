@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-type ViewName = "Command" | "Incidents" | "Response" | "Regions" | "Reports";
+type ViewName = "Command" | "Guide" | "Incidents" | "Response" | "Regions" | "Reports";
 type ServiceStatus = "stable" | "watch" | "critical";
 type IncidentStatus = "Investigating" | "Mitigating" | "Monitoring" | "Resolved";
 type Severity = "Critical" | "High" | "Medium";
@@ -228,7 +228,14 @@ const initialIncidents: Incident[] = [
   },
 ];
 
-const navItems: ViewName[] = ["Command", "Incidents", "Response", "Regions", "Reports"];
+const navItems: ViewName[] = [
+  "Command",
+  "Guide",
+  "Incidents",
+  "Response",
+  "Regions",
+  "Reports",
+];
 const statusOptions: Array<"All" | IncidentStatus> = [
   "All",
   "Investigating",
@@ -249,6 +256,44 @@ const priorityBars = [
   { label: "High", value: 64 },
   { label: "Medium", value: 46 },
   { label: "Noise", value: 22 },
+];
+
+const guideSteps: Array<{
+  label: string;
+  title: string;
+  detail: string;
+  view: ViewName;
+}> = [
+  {
+    label: "1",
+    title: "Start with Command",
+    detail: "Use the home view to see the main issue, open count, service health, and assigned response team.",
+    view: "Command",
+  },
+  {
+    label: "2",
+    title: "Open Incidents",
+    detail: "Check the queue, filter by status, and click the issue your team should handle first.",
+    view: "Incidents",
+  },
+  {
+    label: "3",
+    title: "Check Regions",
+    detail: "Switch between U.S. states, U.S. regions, and global coverage to see who may be affected.",
+    view: "Regions",
+  },
+  {
+    label: "4",
+    title: "Use Response",
+    detail: "Read the impact, likely cause, best next step, evidence notes, and runbook actions.",
+    view: "Response",
+  },
+  {
+    label: "5",
+    title: "Finish with Reports",
+    detail: "Review the weekly priority mix so the team can see what kind of work is repeating.",
+    view: "Reports",
+  },
 ];
 
 const coverageOptions: CoverageScope[] = ["U.S. States", "U.S. Regions", "Global"];
@@ -282,6 +327,7 @@ const statusLabel: Record<ServiceStatus, string> = {
 
 const viewDescriptions: Record<ViewName, string> = {
   Command: "A simple overview for deciding what needs attention first.",
+  Guide: "What SignalDesk does and how to use it.",
   Incidents: "The active queue, filters, owners, locations, and current status.",
   Response: "The selected incident's impact, likely cause, next action, and runbook.",
   Regions: "State, regional, and global impact views for the selected services.",
@@ -449,10 +495,10 @@ export default function Home() {
       <section className="command-grid">
         <aside className="signal-rail" aria-label="Response summary">
           <div className="rail-block priority">
-            <span className="eyebrow">On-call owner</span>
+            <span className="eyebrow">Response owner</span>
             <strong>{selectedIncident.owner}</strong>
             <p>
-              {selectedIncident.service} / {selectedService.state}
+              Assigned team for {selectedIncident.service} in {selectedService.state}.
             </p>
           </div>
 
@@ -501,19 +547,21 @@ export default function Home() {
               <p className="eyebrow">{activeView}</p>
               <h1>{viewDescriptions[activeView]}</h1>
             </div>
-            <div className="view-actions">
-              <button
-                className="primary-action"
-                disabled={reviewLoading}
-                onClick={reviewIncident}
-                type="button"
-              >
-                {reviewLoading ? "Reviewing" : "Review incident"}
-              </button>
-              <button className="secondary-action" onClick={ingestAlert} type="button">
-                Add alert
-              </button>
-            </div>
+            {activeView !== "Guide" && (
+              <div className="view-actions">
+                <button
+                  className="primary-action"
+                  disabled={reviewLoading}
+                  onClick={reviewIncident}
+                  type="button"
+                >
+                  {reviewLoading ? "Reviewing" : "Review incident"}
+                </button>
+                <button className="secondary-action" onClick={ingestAlert} type="button">
+                  Add alert
+                </button>
+              </div>
+            )}
           </section>
 
           {activeView === "Command" && (
@@ -589,6 +637,61 @@ export default function Home() {
                     Open regions
                   </button>
                 </article>
+              </section>
+            </section>
+          )}
+
+          {activeView === "Guide" && (
+            <section className="app-view">
+              <section className="guide-layout">
+                <article className="guide-panel" aria-labelledby="about-title">
+                  <p className="eyebrow">About SignalDesk</p>
+                  <h2 id="about-title">A workspace for fixing product problems.</h2>
+                  <p>
+                    SignalDesk is for teams that need one clear place to understand
+                    a website or app problem. It brings together the issue, affected
+                    service, location, assigned team, evidence, and next action.
+                  </p>
+                  <div className="guide-note">
+                    <strong>Response owner</strong>
+                    <span>
+                      This is the team handling the selected issue. It is not a user
+                      account or login profile.
+                    </span>
+                  </div>
+                </article>
+
+                <article className="guide-panel" aria-labelledby="when-title">
+                  <p className="eyebrow">When to use it</p>
+                  <h2 id="when-title">When something important starts slipping.</h2>
+                  <p>
+                    Use it when checkout slows down, inventory falls behind, login
+                    retries spike, notifications delay, or a service starts affecting
+                    customers in a specific state, region, or country.
+                  </p>
+                  <div className="guide-note soft">
+                    <strong>Main idea</strong>
+                    <span>
+                      Do not hunt through scattered notes. Pick an issue, see the
+                      impact, then follow the response steps.
+                    </span>
+                  </div>
+                </article>
+              </section>
+
+              <section className="guide-steps" aria-label="How to use SignalDesk">
+                {guideSteps.map((step) => (
+                  <button
+                    className="guide-step"
+                    key={step.label}
+                    onClick={() => openView(step.view)}
+                    type="button"
+                  >
+                    <span>{step.label}</span>
+                    <strong>{step.title}</strong>
+                    <p>{step.detail}</p>
+                  </button>
+                ))}
               </section>
             </section>
           )}

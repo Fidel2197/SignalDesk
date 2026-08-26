@@ -300,22 +300,22 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  min-height: 104px;
+  min-height: 88px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background:
     linear-gradient(135deg, rgba(54, 215, 255, 0.1), transparent 42%),
     linear-gradient(180deg, rgba(244, 241, 232, 0.07), rgba(244, 241, 232, 0.03)),
     var(--panel);
-  padding: 18px;
+  padding: 16px;
   box-shadow: var(--shadow);
 }
 
 .view-heading h1 {
-  max-width: 740px;
+  max-width: 660px;
   margin: 4px 0 0;
-  font-size: clamp(1.4rem, 2.4vw, 2rem);
-  line-height: 1.12;
+  font-size: clamp(1.08rem, 1.6vw, 1.55rem);
+  line-height: 1.2;
 }
 
 .view-actions {
@@ -373,9 +373,9 @@ button {
   max-width: 620px;
   margin: 0;
   color: var(--paper);
-  font-size: clamp(1.7rem, 2.6vw, 2.35rem);
+  font-size: clamp(1.35rem, 2vw, 1.9rem);
   font-weight: 950;
-  line-height: 1.05;
+  line-height: 1.12;
   text-wrap: balance;
 }
 
@@ -383,16 +383,16 @@ button {
   max-width: 620px;
   margin: 0;
   color: var(--paper);
-  font-size: clamp(1.7rem, 2.6vw, 2.35rem);
+  font-size: clamp(1.35rem, 2vw, 1.9rem);
   font-weight: 950;
-  line-height: 1.05;
+  line-height: 1.12;
   text-wrap: balance;
 }
 
 .hero-copy p {
   max-width: 680px;
   margin: 16px 0 0;
-  font-size: 1.02rem;
+  font-size: 0.96rem;
   line-height: 1.6;
 }
 
@@ -441,9 +441,10 @@ button {
 
 .primary-action,
 .secondary-action {
-  min-height: 46px;
+  min-height: 40px;
   border: 1px solid transparent;
-  padding: 0 16px;
+  padding: 0 13px;
+  font-size: 0.9rem;
   font-weight: 900;
 }
 
@@ -517,7 +518,7 @@ button {
 
 .dial-core strong {
   color: var(--paper);
-  font-size: 3.2rem;
+  font-size: 2.7rem;
 }
 
 .dial-core p {
@@ -619,7 +620,7 @@ button {
   display: block;
   margin-top: 10px;
   color: var(--paper);
-  font-size: 2rem;
+  font-size: 1.55rem;
 }
 
 .stat-strip p {
@@ -632,9 +633,19 @@ button {
 .workbench,
 .telemetry-grid,
 .response-layout,
-.reports-layout {
+.reports-layout,
+.guide-layout,
+.guide-steps {
   display: grid;
   gap: 16px;
+}
+
+.guide-layout {
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+}
+
+.guide-steps {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .scope-panel {
@@ -667,7 +678,9 @@ button {
 .runbook-panel,
 .terminal-panel,
 .timeline-panel,
-.report-panel {
+.report-panel,
+.guide-panel,
+.guide-step {
   border-radius: 8px;
   padding: 16px;
 }
@@ -1136,6 +1149,79 @@ button {
   font-size: 1.4rem;
 }
 
+.guide-panel {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.guide-panel h2,
+.guide-step strong {
+  margin: 0;
+  color: var(--paper);
+}
+
+.guide-panel h2 {
+  font-size: 1.18rem;
+  line-height: 1.25;
+}
+
+.guide-panel p,
+.guide-step p,
+.guide-note span {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.guide-note {
+  display: grid;
+  gap: 5px;
+  border: 1px solid rgba(31, 136, 183, 0.18);
+  border-left: 4px solid var(--cyan);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.guide-note.soft {
+  border-left-color: var(--green);
+}
+
+.guide-note strong {
+  font-size: 0.84rem;
+  text-transform: uppercase;
+}
+
+.guide-step {
+  min-height: 176px;
+  border: 1px solid var(--line);
+  color: var(--paper);
+  text-align: left;
+}
+
+.guide-step span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--cyan);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 950;
+}
+
+.guide-step strong {
+  display: block;
+  margin-top: 16px;
+  font-size: 0.98rem;
+}
+
+.guide-step p {
+  margin-top: 8px;
+  font-size: 0.86rem;
+}
+
 .mission-bar {
   border-bottom-color: rgba(23, 32, 51, 0.1);
   background: rgba(255, 255, 255, 0.9);
@@ -1179,6 +1265,8 @@ button {
 .terminal-panel,
 .timeline-panel,
 .report-panel,
+.guide-panel,
+.guide-step,
 .view-heading,
 .command-cards article {
   background:
@@ -1203,6 +1291,8 @@ button {
 .runbook-list li,
 .timeline-list li,
 .brief-block,
+.guide-note,
+.guide-step,
 .radius-list span,
 .tag-chip,
 .report-summary {
@@ -1220,7 +1310,8 @@ button {
 .filter-row button:hover,
 .filter-row button.active,
 .ledger-list button:hover,
-.ledger-list button.selected {
+.ledger-list button.selected,
+.guide-step:hover {
   border-color: rgba(31, 136, 183, 0.34);
   background: #eef8fb;
 }
@@ -1391,12 +1482,14 @@ button {
   .telemetry-grid,
   .response-layout,
   .reports-layout,
+  .guide-layout,
   .command-cards,
   .hero-console {
     grid-template-columns: 1fr;
   }
 
-  .scope-grid {
+  .scope-grid,
+  .guide-steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1468,11 +1561,11 @@ button {
   }
 
   .hero-copy h1 {
-    font-size: clamp(1.55rem, 7vw, 2.05rem);
+    font-size: clamp(1.3rem, 5vw, 1.75rem);
   }
 
   .hero-copy h2 {
-    font-size: clamp(1.55rem, 7vw, 2.05rem);
+    font-size: clamp(1.3rem, 5vw, 1.75rem);
   }
 
   .info-summary {
@@ -1509,7 +1602,9 @@ button {
   .runbook-panel,
   .terminal-panel,
   .timeline-panel,
-  .report-panel {
+  .report-panel,
+  .guide-panel,
+  .guide-step {
     padding: 12px;
   }
 
@@ -1521,6 +1616,10 @@ button {
   }
 
   .scope-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-steps {
     grid-template-columns: 1fr;
   }
 
