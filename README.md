@@ -2,7 +2,8 @@
 
 SignalDesk is an incident response workspace for engineering teams. It shows
 what broke, where customers are affected, who owns the response, and what the
-team should do next.
+team should do next. The home screen stays compact, and the top navigation opens
+focused workspaces for incidents, response, regions, and reports.
 
 Live site: https://signaldesk-pink-two.vercel.app
 
@@ -10,6 +11,8 @@ Live site: https://signaldesk-pink-two.vercel.app
 
 - Tracks active incidents across checkout, login, inventory, notifications, and
   dependency services.
+- Uses separate app views instead of putting every dashboard section on the home
+  screen.
 - Lets teams switch the impact view between U.S. states, U.S. regions, and
   global coverage.
 - Prioritizes incidents by owner, status, risk, customer impact, and start time.
@@ -32,7 +35,8 @@ Live site: https://signaldesk-pink-two.vercel.app
 ## Engineering Highlights
 
 - Client-side incident workflow with selected incident state, filtering, alert
-  intake, coverage scope, and response status updates.
+  intake, focused workspace navigation, coverage scope, and response status
+  updates.
 - Server-side incident review that evaluates priority, service risk, and
   evidence before returning a recommendation.
 - Responsive command-center interface built for desktop review and mobile access.
