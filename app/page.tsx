@@ -1,12 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-type ViewName = "Command" | "Guide" | "Incidents" | "Response" | "Regions" | "Reports";
+type ViewName =
+  | "Command"
+  | "Guide"
+  | "Incidents"
+  | "Response"
+  | "Regions"
+  | "Signals"
+  | "Reports";
 type ServiceStatus = "stable" | "watch" | "critical";
 type IncidentStatus = "Investigating" | "Mitigating" | "Monitoring" | "Resolved";
 type Severity = "Critical" | "High" | "Medium";
 type CoverageScope = "U.S. States" | "U.S. Regions" | "Global";
+type ExternalStatus = "operational" | "degraded" | "incident" | "unknown";
 
 type Service = {
   name: string;
@@ -46,6 +54,23 @@ type ScopeRow = {
   place: string;
   status: ServiceStatus;
   detail: string;
+};
+
+type ExternalSignal = {
+  provider: string;
+  status: ExternalStatus;
+  summary: string;
+  affected: string[];
+  focus: string;
+  updatedAt: string | null;
+  sourceUrl: string;
+};
+
+type SignalsPayload = {
+  mode: "live" | "partial" | "fallback";
+  attentionCount: number;
+  summary: string;
+  signals: ExternalSignal[];
 };
 
 const services: Service[] = [
@@ -234,6 +259,7 @@ const navItems: ViewName[] = [
   "Incidents",
   "Response",
   "Regions",
+  "Signals",
   "Reports",
 ];
 const statusOptions: Array<"All" | IncidentStatus> = [
@@ -242,13 +268,6 @@ const statusOptions: Array<"All" | IncidentStatus> = [
   "Mitigating",
   "Monitoring",
   "Resolved",
-];
-
-const responseStats = [
-  { label: "Open", value: "3", detail: "incidents" },
-  { label: "Contained", value: "71%", detail: "risk reduced" },
-  { label: "Avg fix", value: "18m", detail: "today" },
-  { label: "Evidence", value: "92%", detail: "clear enough" },
 ];
 
 const priorityBars = [
@@ -284,12 +303,18 @@ const guideSteps: Array<{
   },
   {
     label: "4",
+    title: "Check Signals",
+    detail: "Open outside status sources to see whether GitHub, Vercel, or network services may affect the response.",
+    view: "Signals",
+  },
+  {
+    label: "5",
     title: "Use Response",
     detail: "Read the impact, likely cause, best next step, evidence notes, and runbook actions.",
     view: "Response",
   },
   {
-    label: "5",
+    label: "6",
     title: "Finish with Reports",
     detail: "Review the weekly priority mix so the team can see what kind of work is repeating.",
     view: "Reports",
@@ -319,10 +344,50 @@ const coverageRows: Record<CoverageScope, ScopeRow[]> = {
   ],
 };
 
+const fallbackSignals: ExternalSignal[] = [
+  {
+    provider: "GitHub",
+    status: "unknown",
+    summary:
+      "GitHub status has not loaded yet. Check it if the incident involves repositories, actions, or releases.",
+    affected: [],
+    focus: "Code hosting, pull requests, actions, and repository access",
+    updatedAt: null,
+    sourceUrl: "https://www.githubstatus.com",
+  },
+  {
+    provider: "Vercel",
+    status: "unknown",
+    summary:
+      "Vercel status has not loaded yet. Check it if the incident involves builds, deploys, or the live site.",
+    affected: [],
+    focus: "Deployments, builds, hosting, and edge delivery",
+    updatedAt: null,
+    sourceUrl: "https://www.vercel-status.com",
+  },
+  {
+    provider: "Cloudflare",
+    status: "unknown",
+    summary:
+      "Cloudflare status has not loaded yet. Check it if the incident involves DNS, traffic, or regional access.",
+    affected: [],
+    focus: "Network, DNS, edge traffic, and regional availability",
+    updatedAt: null,
+    sourceUrl: "https://www.cloudflarestatus.com",
+  },
+];
+
 const statusLabel: Record<ServiceStatus, string> = {
   stable: "Stable",
   watch: "Watch",
   critical: "Critical",
+};
+
+const externalStatusLabel: Record<ExternalStatus, string> = {
+  operational: "Normal",
+  degraded: "Watch",
+  incident: "Issue",
+  unknown: "Check source",
 };
 
 const viewDescriptions: Record<ViewName, string> = {
@@ -331,6 +396,7 @@ const viewDescriptions: Record<ViewName, string> = {
   Incidents: "The active queue, filters, owners, locations, and current status.",
   Response: "The selected incident's impact, likely cause, next action, and runbook.",
   Regions: "State, regional, and global impact views for the selected services.",
+  Signals: "Public source checks that can explain outside service risk.",
   Reports: "A compact weekly signal readout for priority mix and response health.",
 };
 
@@ -344,6 +410,11 @@ export default function Home() {
     "Run a review to turn the selected incident into a plain next step.",
   );
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [signals, setSignals] = useState(fallbackSignals);
+  const [signalSummary, setSignalSummary] = useState(
+    "Checking public sources that can affect deploys, code access, and network traffic.",
+  );
+  const [signalMode, setSignalMode] = useState<SignalsPayload["mode"]>("fallback");
 
   const selectedIncident =
     incidents.find((incident) => incident.id === selectedId) ?? incidents[0];
@@ -363,6 +434,56 @@ export default function Home() {
   const openIncidentCount = incidents.filter(
     (incident) => incident.status !== "Resolved",
   ).length;
+
+  const outsideAttentionCount = signals.filter(
+    (signal) => signal.status !== "operational",
+  ).length;
+
+  const dynamicResponseStats = [
+    { label: "Open", value: `${openIncidentCount}`, detail: "incidents" },
+    { label: "Contained", value: "71%", detail: "risk reduced" },
+    { label: "Sources", value: `${signals.length}`, detail: signalMode },
+    {
+      label: "Watch",
+      value: `${outsideAttentionCount}`,
+      detail: outsideAttentionCount === 1 ? "outside source" : "outside sources",
+    },
+  ];
+
+  useEffect(() => {
+    let ignoreResult = false;
+
+    async function loadSignals() {
+      try {
+        const response = await fetch("/api/signals", { cache: "no-store" });
+
+        if (!response.ok) {
+          throw new Error("Signal source check failed");
+        }
+
+        const payload = (await response.json()) as SignalsPayload;
+
+        if (!ignoreResult) {
+          setSignals(payload.signals);
+          setSignalSummary(payload.summary);
+          setSignalMode(payload.mode);
+        }
+      } catch {
+        if (!ignoreResult) {
+          setSignalSummary(
+            "Public sources could not be checked right now. The local incident evidence is still available.",
+          );
+          setSignalMode("fallback");
+        }
+      }
+    }
+
+    loadSignals();
+
+    return () => {
+      ignoreResult = true;
+    };
+  }, []);
 
   function openView(view: ViewName) {
     setActiveView(view);
@@ -437,6 +558,7 @@ export default function Home() {
           service: selectedIncident.service,
           logs: selectedIncident.logs,
           risk: selectedIncident.risk,
+          externalSignals: signals,
         }),
       });
 
@@ -587,6 +709,10 @@ export default function Home() {
                       <strong>Response</strong>
                       <span>Review the selected incident and follow the runbook.</span>
                     </button>
+                    <button onClick={() => openView("Signals")} type="button">
+                      <strong>Signals</strong>
+                      <span>Check public sources that may explain outside service risk.</span>
+                    </button>
                   </div>
                 </div>
 
@@ -604,7 +730,7 @@ export default function Home() {
               </section>
 
               <section className="stat-strip" aria-label="Response metrics">
-                {responseStats.map((stat) => (
+                {dynamicResponseStats.map((stat) => (
                   <article key={stat.label}>
                     <span>{stat.label}</span>
                     <strong>{stat.value}</strong>
@@ -635,6 +761,16 @@ export default function Home() {
                   </p>
                   <button onClick={() => openView("Regions")} type="button">
                     Open regions
+                  </button>
+                </article>
+                <article>
+                  <span className={`external-pill ${signals[0]?.status ?? "unknown"}`}>
+                    {externalStatusLabel[signals[0]?.status ?? "unknown"]}
+                  </span>
+                  <h2>Outside sources</h2>
+                  <p>{signalSummary}</p>
+                  <button onClick={() => openView("Signals")} type="button">
+                    Open signals
                   </button>
                 </article>
               </section>
@@ -966,10 +1102,99 @@ export default function Home() {
             </section>
           )}
 
+          {activeView === "Signals" && (
+            <section className="app-view">
+              <section className="signals-hero" aria-labelledby="signals-title">
+                <div>
+                  <p className="eyebrow">Public signals</p>
+                  <h2 id="signals-title">Outside status checks for the selected response.</h2>
+                  <p>
+                    SignalDesk checks public source status before a team closes an
+                    incident. This helps separate an internal app problem from a
+                    broader deploy, code hosting, or network issue.
+                  </p>
+                </div>
+                <div className="signal-score">
+                  <span>{signalMode}</span>
+                  <strong>{outsideAttentionCount}</strong>
+                  <p>{outsideAttentionCount === 1 ? "source to check" : "sources to check"}</p>
+                </div>
+              </section>
+
+              <section className="signal-grid" aria-label="Public source checks">
+                {signals.map((signal) => (
+                  <article className={`signal-card ${signal.status}`} key={signal.provider}>
+                    <div className="signal-card-top">
+                      <span className={`external-pill ${signal.status}`}>
+                        {externalStatusLabel[signal.status]}
+                      </span>
+                      <strong>{signal.provider}</strong>
+                    </div>
+                    <p>{signal.summary}</p>
+                    <div className="signal-focus">
+                      <span>Why it matters</span>
+                      <p>{signal.focus}</p>
+                    </div>
+                    {signal.affected.length > 0 && (
+                      <div className="signal-tags" aria-label={`${signal.provider} affected areas`}>
+                        {signal.affected.map((item) => (
+                          <span key={item}>{item}</span>
+                        ))}
+                      </div>
+                    )}
+                    <a href={signal.sourceUrl} rel="noreferrer" target="_blank">
+                      Open source
+                    </a>
+                  </article>
+                ))}
+              </section>
+
+              <section className="reports-layout">
+                <article className="report-panel">
+                  <div className="panel-heading">
+                    <div>
+                      <p className="eyebrow">How SignalDesk uses it</p>
+                      <h2>Outside signals stay separate from local evidence.</h2>
+                      <p className="panel-note">
+                        The app does not replace the incident details. It adds one
+                        more check so the response owner knows whether a public
+                        service should be reviewed before closing the incident.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="signal-checklist">
+                    <span>1. Review the selected incident.</span>
+                    <span>2. Check sources with Watch, Issue, or Check source.</span>
+                    <span>3. Run Review incident to include the source check.</span>
+                  </div>
+                </article>
+
+                <article className="report-panel">
+                  <div className="panel-heading">
+                    <div>
+                      <p className="eyebrow">Selected incident match</p>
+                      <h2>{selectedIncident.service}</h2>
+                      <p className="panel-note">
+                        {selectedIncident.title} is owned by {selectedIncident.owner}.
+                        If an outside source is not normal, keep that note in the
+                        response plan before changing the status.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="report-summary">
+                    <span>Current read</span>
+                    <strong>{outsideAttentionCount ? "Check outside status" : "Local issue focus"}</strong>
+                    <p>{signalSummary}</p>
+                  </div>
+                </article>
+              </section>
+            </section>
+          )}
+
           {activeView === "Reports" && (
             <section className="app-view">
               <section className="stat-strip" aria-label="Response metrics">
-                {responseStats.map((stat) => (
+                {dynamicResponseStats.map((stat) => (
                   <article key={stat.label}>
                     <span>{stat.label}</span>
                     <strong>{stat.value}</strong>

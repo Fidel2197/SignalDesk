@@ -17,11 +17,15 @@ Live site: https://signaldesk-pink-two.vercel.app
   the workflow.
 - Lets teams switch the impact view between U.S. states, U.S. regions, and
   global coverage.
+- Pulls public status signals from GitHub, Vercel, and Cloudflare so the team
+  can see whether an outside service may affect the response.
 - Prioritizes incidents by owner, status, risk, customer impact, and start time.
 - Clarifies that the response owner is the assigned team for the selected issue,
   not a user account.
 - Maps affected services so teams can see where risk may spread.
 - Reviews incident evidence and returns a plain-language response plan.
+- Blends public source checks into the response review instead of relying only
+  on the local incident notes.
 - Provides runbook steps, evidence notes, response history, and weekly priority
   reporting.
 - Supports status updates for investigation, mitigation, monitoring, and
@@ -43,6 +47,9 @@ Live site: https://signaldesk-pink-two.vercel.app
   updates.
 - Server-side incident review that evaluates priority, service risk, and
   evidence before returning a recommendation.
+- Public signal intake route that reads status-page data, normalizes it into
+  simple labels, and keeps the app usable when an outside source cannot be
+  reached.
 - Responsive command-center interface built for desktop review and mobile access.
 - Product-focused README, deployment link, and production build workflow.
 
@@ -50,8 +57,8 @@ Live site: https://signaldesk-pink-two.vercel.app
 
 Built SignalDesk, an incident response workspace using Next.js, React, and
 TypeScript to track production incidents by service, owner, status, customer
-impact, U.S./global coverage, blast radius, runbook steps, and resolution
-history.
+impact, U.S./global coverage, public status signals, blast radius, runbook
+steps, and resolution history.
 
 ## Run Locally
 
