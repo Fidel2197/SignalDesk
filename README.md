@@ -3,7 +3,8 @@
 SignalDesk is an incident response workspace for engineering teams. It shows
 what broke, where customers are affected, who owns the response, and what the
 team should do next. The home screen stays compact, and the top navigation opens
-focused workspaces for the guide, incidents, response, regions, and reports.
+focused workspaces for the guide, incidents, response, regions, public signals,
+and reports.
 
 Live site: https://signaldesk-pink-two.vercel.app
 
@@ -38,6 +39,7 @@ Live site: https://signaldesk-pink-two.vercel.app
 - TypeScript
 - CSS
 - Server-side incident review
+- Public status-page APIs
 - Vercel
 
 ## Engineering Highlights
@@ -53,12 +55,21 @@ Live site: https://signaldesk-pink-two.vercel.app
 - Responsive command-center interface built for desktop review and mobile access.
 - Product-focused README, deployment link, and production build workflow.
 
-## Resume Bullet
+## Resume Entry
 
-Built SignalDesk, an incident response workspace using Next.js, React, and
-TypeScript to track production incidents by service, owner, status, customer
-impact, U.S./global coverage, public status signals, blast radius, runbook
-steps, and resolution history.
+**SignalDesk - Incident Response Workspace**
+
+*Independent Web Project | Cloud and Operations Dashboard*
+
+- Built SignalDesk, a Next.js, React, and TypeScript incident response
+  workspace for tracking product issues by service, owner, severity, status,
+  customer impact, location, blast radius, and response history.
+- Created focused app views for command overview, guide steps, incident queue,
+  response plan, U.S./global coverage, public signals, and weekly reports so
+  users could move through the workflow without crowding the home screen.
+- Added server-side routes that review incident evidence and pull public status
+  signals from GitHub, Vercel, and Cloudflare, helping connect local incident
+  notes with broader cloud, deployment, and platform availability context.
 
 ## Run Locally
 
