@@ -4,18 +4,18 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://signaldesk-pink-two.vercel.app"),
   applicationName: "SignalDesk",
-  title: "SignalDesk | Incident Response Workspace",
+  title: "SignalDesk | Incident Response Practice",
   description:
-    "A response workspace for tracking active incidents by service, location, owner, risk, and next step.",
+    "Practice incident response with browser-saved scenarios, runbook checklists, and separate live public status checks.",
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
     shortcut: ["/favicon.svg"],
     apple: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },
   openGraph: {
-    title: "SignalDesk | Incident Response Workspace",
+    title: "SignalDesk | Incident Response Practice",
     description:
-      "Track active incidents by service, location, owner, risk, and next step.",
+      "Practice response scenarios, save progress in your browser, and check public provider status.",
     url: "/",
     siteName: "SignalDesk",
     images: [
@@ -30,9 +30,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SignalDesk | Incident Response Workspace",
+    title: "SignalDesk | Incident Response Practice",
     description:
-      "Track active incidents by service, location, owner, risk, and next step.",
+      "Practice response scenarios, save progress in your browser, and check public provider status.",
     images: ["/og.png"],
   },
 };

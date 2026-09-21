@@ -1,586 +1,47 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-
-type ViewName =
-  | "Command"
-  | "Guide"
-  | "Incidents"
-  | "Response"
-  | "Regions"
-  | "Signals"
-  | "Reports";
-type ServiceStatus = "stable" | "watch" | "critical";
-type IncidentStatus = "Investigating" | "Mitigating" | "Monitoring" | "Resolved";
-type Severity = "Critical" | "High" | "Medium";
-type CoverageScope = "U.S. States" | "U.S. Regions" | "Global";
-type ExternalStatus = "operational" | "degraded" | "incident" | "unknown";
-
-type Service = {
-  name: string;
-  code: string;
-  status: ServiceStatus;
-  region: string;
-  state: string;
-  city: string;
-  owner: string;
-  latency: number;
-  load: number;
-  uptime: string;
-  x: number;
-  y: number;
-};
-
-type Incident = {
-  id: string;
-  title: string;
-  severity: Severity;
-  status: IncidentStatus;
-  service: string;
-  owner: string;
-  started: string;
-  risk: string;
-  confidence: number;
-  impact: string;
-  rootCause: string;
-  nextAction: string;
-  blastRadius: string[];
-  logs: string[];
-  runbook: string[];
-  timeline: string[];
-};
-
-type ScopeRow = {
-  place: string;
-  status: ServiceStatus;
-  detail: string;
-};
-
-type ExternalSignal = {
-  provider: string;
-  status: ExternalStatus;
-  summary: string;
-  affected: string[];
-  focus: string;
-  updatedAt: string | null;
-  sourceUrl: string;
-};
-
-type SignalsPayload = {
-  mode: "live" | "partial" | "fallback";
-  attentionCount: number;
-  summary: string;
-  signals: ExternalSignal[];
-};
-
-const services: Service[] = [
-  {
-    name: "Checkout Payments",
-    code: "PAY",
-    status: "watch",
-    region: "Central U.S.",
-    state: "Texas",
-    city: "Dallas",
-    owner: "Platform Team",
-    latency: 412,
-    load: 78,
-    uptime: "99.91%",
-    x: 24,
-    y: 38,
-  },
-  {
-    name: "Login Service",
-    code: "AUTH",
-    status: "stable",
-    region: "National",
-    state: "All states",
-    city: "Edge network",
-    owner: "Security Team",
-    latency: 128,
-    load: 42,
-    uptime: "99.99%",
-    x: 52,
-    y: 22,
-  },
-  {
-    name: "Inventory Sync",
-    code: "INV",
-    status: "critical",
-    region: "Eastern U.S.",
-    state: "New York",
-    city: "Newark",
-    owner: "Commerce Team",
-    latency: 860,
-    load: 91,
-    uptime: "98.72%",
-    x: 72,
-    y: 55,
-  },
-  {
-    name: "Notifications",
-    code: "MSG",
-    status: "stable",
-    region: "Western U.S.",
-    state: "California",
-    city: "San Jose",
-    owner: "Growth Team",
-    latency: 205,
-    load: 57,
-    uptime: "99.95%",
-    x: 39,
-    y: 72,
-  },
-  {
-    name: "Tax Lookup",
-    code: "TAX",
-    status: "watch",
-    region: "Central U.S.",
-    state: "Illinois",
-    city: "Chicago",
-    owner: "Platform Team",
-    latency: 522,
-    load: 68,
-    uptime: "99.82%",
-    x: 15,
-    y: 68,
-  },
-];
-
-const initialIncidents: Incident[] = [
-  {
-    id: "INC-1048",
-    title: "Checkout is slowing down",
-    severity: "High",
-    status: "Investigating",
-    service: "Checkout Payments",
-    owner: "Platform Team",
-    started: "14 min ago",
-    risk: "Revenue impact",
-    confidence: 92,
-    impact:
-      "Customers can still check out, but payment confirmation is taking longer than normal.",
-    rootCause:
-      "A recent tax lookup change is slowing down checkout. Payments are still going through, so the first move is to reduce delay before it becomes an outage.",
-    nextAction:
-      "Move a small slice of checkout traffic back to the previous worker and compare confirmation speed for ten minutes.",
-    blastRadius: ["Checkout confirmation", "Tax lookup", "Order receipts"],
-    logs: [
-      "17:06 Checkout latency reached 932 ms at peak",
-      "17:07 Tax lookup timeout rate rose to 3.8%",
-      "17:08 Texas checkout traffic moved to backup pool",
-      "17:09 Recent tax cache change matched the slowdown",
-    ],
-    runbook: [
-      "Compare checkout speed with the last stable release.",
-      "Move 20% of checkout traffic to the previous worker.",
-      "Watch payment confirmation and tax lookup speed for 10 minutes.",
-      "Roll back the tax lookup change if delays stay high.",
-    ],
-    timeline: [
-      "Checkout slowdown detected",
-      "Platform Team assigned",
-      "Tax lookup change matched to the timing",
-    ],
-  },
-  {
-    id: "INC-1047",
-    title: "Inventory updates are falling behind",
-    severity: "Critical",
-    status: "Mitigating",
-    service: "Inventory Sync",
-    owner: "Commerce Team",
-    started: "31 min ago",
-    risk: "Order accuracy",
-    confidence: 88,
-    impact:
-      "Some product pages may show old availability while delayed inventory updates catch up.",
-    rootCause:
-      "A worker setting cut the number of inventory jobs running at the same time during a busy order window.",
-    nextAction:
-      "Restore normal worker capacity, replay delayed inventory updates, and keep stale-stock warnings visible until the queue clears.",
-    blastRadius: ["Warehouse events", "Product availability", "Stock checks"],
-    logs: [
-      "16:48 Inventory queue reached 18,422 waiting updates",
-      "16:51 New York warehouse lag reached 18 minutes",
-      "16:54 Worker capacity changed from 18 to 8",
-      "17:02 Replay window prepared for delayed inventory updates",
-    ],
-    runbook: [
-      "Restore inventory worker capacity to normal.",
-      "Replay delayed updates from the waiting queue.",
-      "Compare New York lag against the western warehouse baseline.",
-      "Remove stale-stock warnings after lag drops under 90 seconds.",
-    ],
-    timeline: [
-      "Critical inventory incident opened",
-      "Commerce Team joined response",
-      "Worker capacity rollback prepared",
-    ],
-  },
-  {
-    id: "INC-1046",
-    title: "Notifications are delayed",
-    severity: "Medium",
-    status: "Monitoring",
-    service: "Notifications",
-    owner: "Growth Team",
-    started: "52 min ago",
-    risk: "Customer messaging delay",
-    confidence: 76,
-    impact: "Receipts and marketing notifications may arrive several minutes late.",
-    rootCause:
-      "A delivery provider started throttling messages. Internal workers are healthy and the waiting queue is shrinking.",
-    nextAction:
-      "Keep nonessential campaigns paused until provider limits normalize and receipt messages stay current.",
-    blastRadius: ["Receipt messages", "Campaign sends", "Retry queue"],
-    logs: [
-      "16:15 Notification retry queue reached 2,180 messages",
-      "16:24 Nonessential campaigns paused",
-      "16:39 Provider throttle window reduced to 12%",
-      "17:01 Retry queue down to 620 and still falling",
-    ],
-    runbook: [
-      "Keep nonessential campaigns paused.",
-      "Watch the retry queue until it keeps falling.",
-      "Confirm receipts deliver before campaign traffic resumes.",
-      "Resume scheduled sends after provider throttling clears.",
-    ],
-    timeline: [
-      "Provider throttling detected",
-      "Campaign traffic reduced",
-      "Retry queue trending down",
-    ],
-  },
-];
-
-const navItems: ViewName[] = [
-  "Command",
-  "Guide",
-  "Incidents",
-  "Response",
-  "Regions",
-  "Signals",
-  "Reports",
-];
-const statusOptions: Array<"All" | IncidentStatus> = [
-  "All",
-  "Investigating",
-  "Mitigating",
-  "Monitoring",
-  "Resolved",
-];
-
-const priorityBars = [
-  { label: "Critical", value: 32 },
-  { label: "High", value: 64 },
-  { label: "Medium", value: 46 },
-  { label: "Noise", value: 22 },
-];
-
-const guideSteps: Array<{
-  label: string;
-  title: string;
-  detail: string;
-  view: ViewName;
-}> = [
-  {
-    label: "1",
-    title: "Start with Command",
-    detail: "Use the home view to see the main issue, open count, service health, and assigned response team.",
-    view: "Command",
-  },
-  {
-    label: "2",
-    title: "Open Incidents",
-    detail: "Check the queue, filter by status, and click the issue your team should handle first.",
-    view: "Incidents",
-  },
-  {
-    label: "3",
-    title: "Check Regions",
-    detail: "Switch between U.S. states, U.S. regions, and global coverage to see who may be affected.",
-    view: "Regions",
-  },
-  {
-    label: "4",
-    title: "Check Signals",
-    detail: "Open outside status sources to see whether GitHub, Vercel, or network services may affect the response.",
-    view: "Signals",
-  },
-  {
-    label: "5",
-    title: "Use Response",
-    detail: "Read the impact, likely cause, best next step, evidence notes, and runbook actions.",
-    view: "Response",
-  },
-  {
-    label: "6",
-    title: "Finish with Reports",
-    detail: "Review the weekly priority mix so the team can see what kind of work is repeating.",
-    view: "Reports",
-  },
-];
-
-const coverageOptions: CoverageScope[] = ["U.S. States", "U.S. Regions", "Global"];
-
-const coverageRows: Record<CoverageScope, ScopeRow[]> = {
-  "U.S. States": [
-    { place: "Texas", status: "watch", detail: "Checkout traffic is slower than normal." },
-    { place: "New York", status: "critical", detail: "Inventory updates need attention." },
-    { place: "California", status: "stable", detail: "Notification workers are healthy." },
-    { place: "Illinois", status: "watch", detail: "Tax lookup delay is being reviewed." },
-  ],
-  "U.S. Regions": [
-    { place: "Central U.S.", status: "watch", detail: "Checkout and tax lookup are under review." },
-    { place: "Eastern U.S.", status: "critical", detail: "Inventory replay is behind." },
-    { place: "Western U.S.", status: "stable", detail: "No active customer impact." },
-    { place: "National", status: "stable", detail: "Login traffic is normal." },
-  ],
-  Global: [
-    { place: "North America", status: "watch", detail: "Checkout has the only active slowdown." },
-    { place: "Europe", status: "stable", detail: "No active incident reported." },
-    { place: "Asia-Pacific", status: "stable", detail: "Normal traffic pattern." },
-    { place: "South America", status: "stable", detail: "No customer impact reported." },
-  ],
-};
-
-const fallbackSignals: ExternalSignal[] = [
-  {
-    provider: "GitHub",
-    status: "unknown",
-    summary:
-      "GitHub status has not loaded yet. Check it if the incident involves repositories, actions, or releases.",
-    affected: [],
-    focus: "Code hosting, pull requests, actions, and repository access",
-    updatedAt: null,
-    sourceUrl: "https://www.githubstatus.com",
-  },
-  {
-    provider: "Vercel",
-    status: "unknown",
-    summary:
-      "Vercel status has not loaded yet. Check it if the incident involves builds, deploys, or the live site.",
-    affected: [],
-    focus: "Deployments, builds, hosting, and edge delivery",
-    updatedAt: null,
-    sourceUrl: "https://www.vercel-status.com",
-  },
-  {
-    provider: "Cloudflare",
-    status: "unknown",
-    summary:
-      "Cloudflare status has not loaded yet. Check it if the incident involves DNS, traffic, or regional access.",
-    affected: [],
-    focus: "Network, DNS, edge traffic, and regional availability",
-    updatedAt: null,
-    sourceUrl: "https://www.cloudflarestatus.com",
-  },
-];
-
-const statusLabel: Record<ServiceStatus, string> = {
-  stable: "Stable",
-  watch: "Watch",
-  critical: "Critical",
-};
-
-const externalStatusLabel: Record<ExternalStatus, string> = {
-  operational: "Normal",
-  degraded: "Watch",
-  incident: "Issue",
-  unknown: "Check source",
-};
-
-const viewDescriptions: Record<ViewName, string> = {
-  Command: "A simple overview for deciding what needs attention first.",
-  Guide: "What SignalDesk does and how to use it.",
-  Incidents: "The active queue, filters, owners, locations, and current status.",
-  Response: "The selected incident's impact, likely cause, next action, and runbook.",
-  Regions: "State, regional, and global impact views for the selected services.",
-  Signals: "Public source checks that can explain outside service risk.",
-  Reports: "A compact weekly signal readout for priority mix and response health.",
-};
+import { useState } from "react";
+import { services, navItems, viewDescriptions } from "../lib/practice-data";
+import type { ViewName, IncidentStatus, CoverageScope } from "../lib/types";
+import { usePracticeWorkspace } from "../hooks/use-practice-workspace";
+import { usePublicSignals } from "../hooks/use-public-signals";
+import { useIncidentReview } from "../hooks/use-incident-review";
+import { CommandView } from "../components/command-view";
+import { GuideView } from "../components/guide-view";
+import { IncidentsView } from "../components/incidents-view";
+import { ResponseView } from "../components/response-view";
+import { RegionsView } from "../components/regions-view";
+import { SignalsView } from "../components/signals-view";
+import { ReportsView } from "../components/reports-view";
 
 export default function Home() {
   const [activeView, setActiveView] = useState<ViewName>("Command");
-  const [filter, setFilter] = useState<(typeof statusOptions)[number]>("All");
+  const [filter, setFilter] = useState<"All" | IncidentStatus>("All");
   const [coverageScope, setCoverageScope] = useState<CoverageScope>("U.S. States");
-  const [incidents, setIncidents] = useState(initialIncidents);
-  const [selectedId, setSelectedId] = useState(initialIncidents[0].id);
-  const [reviewNote, setReviewNote] = useState(
-    "Run a review to turn the selected incident into a plain next step.",
-  );
-  const [reviewLoading, setReviewLoading] = useState(false);
-  const [signals, setSignals] = useState(fallbackSignals);
-  const [signalSummary, setSignalSummary] = useState(
-    "Checking public sources that can affect deploys, code access, and network traffic.",
-  );
-  const [signalMode, setSignalMode] = useState<SignalsPayload["mode"]>("fallback");
-
-  const selectedIncident =
-    incidents.find((incident) => incident.id === selectedId) ?? incidents[0];
-
-  const selectedService =
-    services.find((service) => service.name === selectedIncident.service) ??
-    services[0];
-
-  const filteredIncidents = useMemo(() => {
-    if (filter === "All") {
-      return incidents;
-    }
-
-    return incidents.filter((incident) => incident.status === filter);
-  }, [filter, incidents]);
-
-  const openIncidentCount = incidents.filter(
-    (incident) => incident.status !== "Resolved",
-  ).length;
-
-  const outsideAttentionCount = signals.filter(
-    (signal) => signal.status !== "operational",
-  ).length;
-
+  const workspace = usePracticeWorkspace();
+  const { incidents, selectedId } = workspace;
+  const { signals, signalSummary, signalMode, checkedAt, loading, refresh } = usePublicSignals();
+  const review = useIncidentReview();
+  const { reviewLoading } = review;
+  const selectedIncident = incidents.find((item) => item.id === selectedId) ?? incidents[0];
+  const selectedService = services.find((item) => item.name === selectedIncident.service) ?? services[0];
+  const filteredIncidents = filter === "All" ? incidents : incidents.filter((item) => item.status === filter);
+  const openIncidentCount = incidents.filter((item) => item.status !== "Resolved").length;
+  const outsideAttentionCount = signals.filter((item) => item.status !== "operational").length;
   const dynamicResponseStats = [
-    { label: "Open", value: `${openIncidentCount}`, detail: "incidents" },
-    { label: "Contained", value: "71%", detail: "risk reduced" },
-    { label: "Sources", value: `${signals.length}`, detail: signalMode },
-    {
-      label: "Watch",
-      value: `${outsideAttentionCount}`,
-      detail: outsideAttentionCount === 1 ? "outside source" : "outside sources",
-    },
+    { label: "Open", value: String(openIncidentCount), detail: "practice incidents" },
+    { label: "Resolved", value: String(incidents.length - openIncidentCount), detail: "practice incidents" },
+    { label: "Checked", value: String(signals.filter((item) => item.status !== "unknown").length), detail: "public sources" },
+    { label: "Attention", value: String(outsideAttentionCount), detail: "public sources / unknown" },
   ];
-
-  useEffect(() => {
-    let ignoreResult = false;
-
-    async function loadSignals() {
-      try {
-        const response = await fetch("/api/signals", { cache: "no-store" });
-
-        if (!response.ok) {
-          throw new Error("Signal source check failed");
-        }
-
-        const payload = (await response.json()) as SignalsPayload;
-
-        if (!ignoreResult) {
-          setSignals(payload.signals);
-          setSignalSummary(payload.summary);
-          setSignalMode(payload.mode);
-        }
-      } catch {
-        if (!ignoreResult) {
-          setSignalSummary(
-            "Public sources could not be checked right now. The local incident evidence is still available.",
-          );
-          setSignalMode("fallback");
-        }
-      }
-    }
-
-    loadSignals();
-
-    return () => {
-      ignoreResult = true;
-    };
-  }, []);
-
   function openView(view: ViewName) {
     setActiveView(view);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
-
-  function selectIncident(id: string, nextView: ViewName = "Response") {
-    setSelectedId(id);
-    openView(nextView);
-  }
-
-  function updateIncidentStatus(status: IncidentStatus) {
-    setIncidents((current) =>
-      current.map((incident) =>
-        incident.id === selectedIncident.id
-          ? {
-              ...incident,
-              status,
-              timeline: [`Status changed to ${status}`, ...incident.timeline],
-            }
-          : incident,
-      ),
-    );
-  }
-
-  function ingestAlert() {
-    const nextIncident: Incident = {
-      id: `INC-${1049 + incidents.length}`,
-      title: "Mobile login retry spike",
-      severity: "High",
-      status: "Investigating",
-      service: "Login Service",
-      owner: "Security Team",
-      started: "just now",
-      risk: "Login reliability",
-      confidence: 81,
-      impact: "Some mobile users may need to retry sign-in after reopening the app.",
-      rootCause:
-        "The newest mobile build is sending expired refresh tokens after app resume. Web login is not affected.",
-      nextAction:
-        "Limit repeated retries, alert the mobile release owner, and compare token refresh behavior with the previous build.",
-      blastRadius: ["Mobile login", "Token refresh", "App resume"],
-      logs: [
-        "17:18 Mobile token refresh failures rose to 186",
-        "17:18 Mobile build 8.14.2 matched the retry loop",
-        "17:19 Web login success stayed at 99.8%",
-      ],
-      runbook: [
-        "Confirm which mobile app version created the retry spike.",
-        "Limit repeated token refresh retries.",
-        "Notify the mobile release owner.",
-        "Keep web login metrics separate from mobile retry noise.",
-      ],
-      timeline: ["New login alert added", "Owner assignment pending"],
-    };
-
-    setIncidents((current) => [nextIncident, ...current]);
-    setSelectedId(nextIncident.id);
-    openView("Response");
-  }
-
-  async function reviewIncident() {
-    setReviewLoading(true);
-
-    try {
-      const response = await fetch("/api/review", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          incidentId: selectedIncident.id,
-          severity: selectedIncident.severity,
-          service: selectedIncident.service,
-          logs: selectedIncident.logs,
-          risk: selectedIncident.risk,
-          externalSignals: signals,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Review request failed");
-      }
-
-      const payload = (await response.json()) as {
-        recommendation: string;
-      };
-
-      setReviewNote(payload.recommendation);
-      openView("Response");
-    } catch {
-      setReviewNote(
-        "Keep the current response plan active and watch the selected service until the trend improves.",
-      );
-      openView("Response");
-    } finally {
-      setReviewLoading(false);
-    }
-  }
+  function selectIncident(id: string) { workspace.select(id); openView("Response"); }
+  function updateIncidentStatus(status: IncidentStatus) { workspace.updateStatus(selectedIncident.id, status); }
+  function ingestAlert() { workspace.addAlert(); openView("Response"); }
+  function reviewIncident() { void review.review(selectedIncident, signals); openView("Response"); }
 
   return (
     <main className="command-shell">
@@ -609,11 +70,22 @@ export default function Home() {
         </nav>
 
         <div className="mission-status" aria-label="Current response status">
-          <span>Live response</span>
+          <span>Practice workspace</span>
           <strong>{openIncidentCount} open</strong>
         </div>
       </header>
 
+      <section className="practice-notice" aria-label="Workspace data and saving">
+        <div><strong>Practice incidents. Real public status checks.</strong>
+          <p>Incidents, owners, logs, service loads, and regional metrics are simulated. Status and checklist changes stay in this browser.</p>
+          <small role="status">{workspace.storageMessage}</small>
+        </div>
+        <button className="secondary-action" disabled={!workspace.ready} onClick={() => {
+          if (window.confirm("Reset all practice statuses, checklist steps, and activity in this browser?")) {
+            workspace.reset(); review.clear(); setFilter("All"); openView("Command");
+          }
+        }} type="button">Reset practice</button>
+      </section>
       <section className="command-grid">
         <aside className="signal-rail" aria-label="Response summary">
           <div className="rail-block priority">
@@ -625,7 +97,7 @@ export default function Home() {
           </div>
 
           <div className="rail-block">
-            <span className="eyebrow">Services</span>
+            <span className="eyebrow">Simulated services</span>
             <div className="rail-services">
               {services.map((service) => {
                 const linkedIncident = incidents.find(
@@ -673,580 +145,45 @@ export default function Home() {
               <div className="view-actions">
                 <button
                   className="primary-action"
-                  disabled={reviewLoading}
+                  disabled={reviewLoading || !workspace.ready}
                   onClick={reviewIncident}
                   type="button"
                 >
                   {reviewLoading ? "Reviewing" : "Review incident"}
                 </button>
-                <button className="secondary-action" onClick={ingestAlert} type="button">
-                  Add alert
+                <button className="secondary-action" onClick={ingestAlert} disabled={!workspace.ready || incidents.length >= 23} type="button">
+                  Add practice alert
                 </button>
               </div>
             )}
           </section>
 
           {activeView === "Command" && (
-            <section className="app-view">
-              <section className="hero-console compact-hero">
-                <div className="hero-copy">
-                  <p className="eyebrow">Incident response workspace</p>
-                  <h2>See what broke, where it is, and what to do next.</h2>
-                  <p>
-                    SignalDesk keeps the home screen simple, then opens focused
-                    workspaces when a team needs deeper details.
-                  </p>
-                  <div className="info-summary" aria-label="Command shortcuts">
-                    <button onClick={() => openView("Incidents")} type="button">
-                      <strong>Incidents</strong>
-                      <span>Open the active queue and choose what to handle first.</span>
-                    </button>
-                    <button onClick={() => openView("Regions")} type="button">
-                      <strong>Regions</strong>
-                      <span>Switch between state, regional, and global impact.</span>
-                    </button>
-                    <button onClick={() => openView("Response")} type="button">
-                      <strong>Response</strong>
-                      <span>Review the selected incident and follow the runbook.</span>
-                    </button>
-                    <button onClick={() => openView("Signals")} type="button">
-                      <strong>Signals</strong>
-                      <span>Check public sources that may explain outside service risk.</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="impact-dial" aria-label="Selected incident impact">
-                  <div className="dial-core">
-                    <span>{selectedIncident.severity}</span>
-                    <strong>{selectedIncident.confidence}%</strong>
-                    <p>clear evidence</p>
-                  </div>
-                  <div className="dial-meta">
-                    <span>{selectedIncident.id}</span>
-                    <b>{selectedService.state}</b>
-                  </div>
-                </div>
-              </section>
-
-              <section className="stat-strip" aria-label="Response metrics">
-                {dynamicResponseStats.map((stat) => (
-                  <article key={stat.label}>
-                    <span>{stat.label}</span>
-                    <strong>{stat.value}</strong>
-                    <p>{stat.detail}</p>
-                  </article>
-                ))}
-              </section>
-
-              <section className="command-cards">
-                <article>
-                  <span className={`severity ${selectedIncident.severity.toLowerCase()}`}>
-                    {selectedIncident.severity}
-                  </span>
-                  <h2>{selectedIncident.title}</h2>
-                  <p>{selectedIncident.impact}</p>
-                  <button onClick={() => openView("Response")} type="button">
-                    Open response
-                  </button>
-                </article>
-                <article>
-                  <span className={`state-pill ${selectedService.status}`}>
-                    {statusLabel[selectedService.status]}
-                  </span>
-                  <h2>{selectedService.state}</h2>
-                  <p>
-                    {selectedService.name} is owned by {selectedService.owner} in{" "}
-                    {selectedService.region}.
-                  </p>
-                  <button onClick={() => openView("Regions")} type="button">
-                    Open regions
-                  </button>
-                </article>
-                <article>
-                  <span className={`external-pill ${signals[0]?.status ?? "unknown"}`}>
-                    {externalStatusLabel[signals[0]?.status ?? "unknown"]}
-                  </span>
-                  <h2>Outside sources</h2>
-                  <p>{signalSummary}</p>
-                  <button onClick={() => openView("Signals")} type="button">
-                    Open signals
-                  </button>
-                </article>
-              </section>
-            </section>
+            <CommandView selectedIncident={selectedIncident} selectedService={selectedService} dynamicResponseStats={dynamicResponseStats} signals={signals} signalSummary={signalSummary} openView={openView} />
           )}
 
           {activeView === "Guide" && (
-            <section className="app-view">
-              <section className="guide-layout">
-                <article className="guide-panel" aria-labelledby="about-title">
-                  <p className="eyebrow">About SignalDesk</p>
-                  <h2 id="about-title">A workspace for fixing product problems.</h2>
-                  <p>
-                    SignalDesk is for teams that need one clear place to understand
-                    a website or app problem. It brings together the issue, affected
-                    service, location, assigned team, evidence, and next action.
-                  </p>
-                  <div className="guide-note">
-                    <strong>Response owner</strong>
-                    <span>
-                      This is the team handling the selected issue. It is not a user
-                      account or login profile.
-                    </span>
-                  </div>
-                </article>
-
-                <article className="guide-panel" aria-labelledby="when-title">
-                  <p className="eyebrow">When to use it</p>
-                  <h2 id="when-title">When something important starts slipping.</h2>
-                  <p>
-                    Use it when checkout slows down, inventory falls behind, login
-                    retries spike, notifications delay, or a service starts affecting
-                    customers in a specific state, region, or country.
-                  </p>
-                  <div className="guide-note soft">
-                    <strong>Main idea</strong>
-                    <span>
-                      Do not hunt through scattered notes. Pick an issue, see the
-                      impact, then follow the response steps.
-                    </span>
-                  </div>
-                </article>
-              </section>
-
-              <section className="guide-steps" aria-label="How to use SignalDesk">
-                {guideSteps.map((step) => (
-                  <button
-                    className="guide-step"
-                    key={step.label}
-                    onClick={() => openView(step.view)}
-                    type="button"
-                  >
-                    <span>{step.label}</span>
-                    <strong>{step.title}</strong>
-                    <p>{step.detail}</p>
-                  </button>
-                ))}
-              </section>
-            </section>
+            <GuideView openView={openView} />
           )}
 
           {activeView === "Incidents" && (
-            <section className="app-view">
-              <article className="incident-ledger" aria-labelledby="ledger-title">
-                <div className="panel-heading">
-                  <div>
-                    <p className="eyebrow">Incidents</p>
-                    <h2 id="ledger-title">Active response queue</h2>
-                    <p className="panel-note">
-                      Click a row to open its response plan.
-                    </p>
-                  </div>
-                  <div className="filter-row" aria-label="Incident status filter">
-                    {statusOptions.map((option) => (
-                      <button
-                        className={filter === option ? "active" : ""}
-                        key={option}
-                        onClick={() => setFilter(option)}
-                        type="button"
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="ledger-list">
-                  {filteredIncidents.map((incident) => {
-                    const incidentService =
-                      services.find((service) => service.name === incident.service) ??
-                      services[0];
-
-                    return (
-                      <button
-                        className={selectedIncident.id === incident.id ? "selected" : ""}
-                        key={incident.id}
-                        onClick={() => selectIncident(incident.id)}
-                        type="button"
-                      >
-                        <span className={`severity ${incident.severity.toLowerCase()}`}>
-                          {incident.severity}
-                        </span>
-                        <strong>{incident.title}</strong>
-                        <small>
-                          {incident.service} / {incidentService.state} / {incident.started}
-                        </small>
-                        <b>{incident.status}</b>
-                      </button>
-                    );
-                  })}
-                </div>
-              </article>
-
-              <section className="command-cards">
-                <article>
-                  <h2>Selected incident</h2>
-                  <p>{selectedIncident.impact}</p>
-                  <button onClick={() => openView("Response")} type="button">
-                    Open response plan
-                  </button>
-                </article>
-                <article>
-                  <h2>Current owner</h2>
-                  <p>
-                    {selectedIncident.owner} owns this response for{" "}
-                    {selectedIncident.service}.
-                  </p>
-                  <button onClick={() => openView("Regions")} type="button">
-                    View location impact
-                  </button>
-                </article>
-              </section>
-            </section>
+            <IncidentsView filter={filter} setFilter={setFilter} filteredIncidents={filteredIncidents} selectedIncident={selectedIncident} selectIncident={selectIncident} openView={openView} />
           )}
 
           {activeView === "Response" && (
-            <section className="app-view">
-              <section className="response-layout">
-                <article className="briefing-panel" aria-labelledby="briefing-title">
-                  <div className="panel-heading">
-                    <div>
-                      <p className="eyebrow">Response plan</p>
-                      <h2 id="briefing-title">{selectedIncident.id}</h2>
-                      <p className="panel-note">
-                        Plain summary of the impact and next move.
-                      </p>
-                    </div>
-                    <span className={`severity ${selectedIncident.severity.toLowerCase()}`}>
-                      {selectedIncident.severity}
-                    </span>
-                  </div>
-
-                  <h3>{selectedIncident.title}</h3>
-                  <p className="impact-copy">{selectedIncident.impact}</p>
-
-                  <div className="brief-block">
-                    <span>What is happening</span>
-                    <p>{selectedIncident.rootCause}</p>
-                  </div>
-
-                  <div className="brief-block action">
-                    <span>Best next step</span>
-                    <p>{selectedIncident.nextAction}</p>
-                  </div>
-
-                  <div className="brief-block engine">
-                    <span>Review result</span>
-                    <p>{reviewNote}</p>
-                  </div>
-
-                  <div className="status-actions">
-                    <button onClick={() => updateIncidentStatus("Mitigating")} type="button">
-                      Mark mitigating
-                    </button>
-                    <button onClick={() => updateIncidentStatus("Monitoring")} type="button">
-                      Mark monitoring
-                    </button>
-                    <button onClick={() => updateIncidentStatus("Resolved")} type="button">
-                      Mark resolved
-                    </button>
-                  </div>
-                </article>
-
-                <article className="runbook-panel" aria-labelledby="runbook-title">
-                  <div className="panel-heading">
-                    <div>
-                      <p className="eyebrow">Runbook</p>
-                      <h2 id="runbook-title">Steps to follow</h2>
-                      <p className="panel-note">
-                        Concrete actions for the assigned team.
-                      </p>
-                    </div>
-                  </div>
-                  <ol className="runbook-list">
-                    {selectedIncident.runbook.map((step) => (
-                      <li key={step}>{step}</li>
-                    ))}
-                  </ol>
-                </article>
-              </section>
-
-              <section className="telemetry-grid two-column">
-                <article className="terminal-panel" aria-labelledby="terminal-title">
-                  <div className="panel-heading">
-                    <div>
-                      <p className="eyebrow">Evidence</p>
-                      <h2 id="terminal-title">Signals checked</h2>
-                      <p className="panel-note">
-                        Short notes that explain why the response plan was chosen.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="evidence-list">
-                    {selectedIncident.logs.map((log) => (
-                      <p key={log}>{log}</p>
-                    ))}
-                  </div>
-                </article>
-
-                <article className="timeline-panel" aria-labelledby="timeline-title">
-                  <div className="panel-heading">
-                    <div>
-                      <p className="eyebrow">Timeline</p>
-                      <h2 id="timeline-title">Response history</h2>
-                      <p className="panel-note">
-                        What changed during the response.
-                      </p>
-                    </div>
-                  </div>
-                  <ol className="timeline-list">
-                    {selectedIncident.timeline.map((event) => (
-                      <li key={event}>{event}</li>
-                    ))}
-                  </ol>
-                </article>
-              </section>
-            </section>
+            <ResponseView selectedIncident={selectedIncident} reviewNote={review.noteFor(selectedIncident.id)} updateIncidentStatus={updateIncidentStatus} completed={workspace.completed[selectedIncident.id] ?? []} toggleStep={(index) => workspace.toggleStep(selectedIncident.id, index)} ready={workspace.ready} />
           )}
 
           {activeView === "Regions" && (
-            <section className="app-view">
-              <section className="scope-panel" aria-labelledby="regions-title">
-                <div className="panel-heading">
-                  <div>
-                    <p className="eyebrow">Coverage scope</p>
-                    <h2 id="regions-title">Choose how wide the view should be</h2>
-                    <p className="panel-note">
-                      Use states for local impact, regions for routing decisions,
-                      and global for worldwide service health.
-                    </p>
-                  </div>
-                  <div className="scope-tabs" aria-label="Coverage scope options">
-                    {coverageOptions.map((option) => (
-                      <button
-                        className={coverageScope === option ? "active" : ""}
-                        key={option}
-                        onClick={() => setCoverageScope(option)}
-                        type="button"
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="scope-grid">
-                  {coverageRows[coverageScope].map((row) => (
-                    <article className={`scope-card ${row.status}`} key={row.place}>
-                      <span className={`state-pill ${row.status}`}>
-                        {statusLabel[row.status]}
-                      </span>
-                      <strong>{row.place}</strong>
-                      <p>{row.detail}</p>
-                    </article>
-                  ))}
-                </div>
-              </section>
-
-              <article className="topology-panel" aria-labelledby="topology-title">
-                <div className="panel-heading">
-                  <div>
-                    <p className="eyebrow">Service map</p>
-                    <h2 id="topology-title">What is affected</h2>
-                    <p className="panel-note">
-                      Click a service to open its response plan.
-                    </p>
-                  </div>
-                  <span className={`state-pill ${selectedService.status}`}>
-                    {statusLabel[selectedService.status]}
-                  </span>
-                </div>
-
-                <div className="topology-map" aria-label="Service topology map">
-                  <span className="route route-a" />
-                  <span className="route route-b" />
-                  <span className="route route-c" />
-                  <span className="route route-d" />
-                  {services.map((service) => {
-                    const linkedIncident = incidents.find(
-                      (incident) => incident.service === service.name,
-                    );
-
-                    return (
-                      <button
-                        className={`map-node ${service.status} ${
-                          selectedService.name === service.name ? "active" : ""
-                        }`}
-                        key={service.name}
-                        onClick={() => {
-                          if (linkedIncident) {
-                            selectIncident(linkedIncident.id);
-                          }
-                        }}
-                        style={{ left: `${service.x}%`, top: `${service.y}%` }}
-                        type="button"
-                      >
-                        <span>{service.code}</span>
-                        <small>{service.state}</small>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="radius-list" aria-label="Affected areas">
-                  {selectedIncident.blastRadius.map((area) => (
-                    <span key={area}>{area}</span>
-                  ))}
-                </div>
-              </article>
-            </section>
+            <RegionsView coverageScope={coverageScope} setCoverageScope={setCoverageScope} selectedIncident={selectedIncident} selectedService={selectedService} incidents={incidents} selectIncident={selectIncident} />
           )}
 
           {activeView === "Signals" && (
-            <section className="app-view">
-              <section className="signals-hero" aria-labelledby="signals-title">
-                <div>
-                  <p className="eyebrow">Public signals</p>
-                  <h2 id="signals-title">Outside status checks for the selected response.</h2>
-                  <p>
-                    SignalDesk checks public source status before a team closes an
-                    incident. This helps separate an internal app problem from a
-                    broader deploy, code hosting, or network issue.
-                  </p>
-                </div>
-                <div className="signal-score">
-                  <span>{signalMode}</span>
-                  <strong>{outsideAttentionCount}</strong>
-                  <p>{outsideAttentionCount === 1 ? "source to check" : "sources to check"}</p>
-                </div>
-              </section>
-
-              <section className="signal-grid" aria-label="Public source checks">
-                {signals.map((signal) => (
-                  <article className={`signal-card ${signal.status}`} key={signal.provider}>
-                    <div className="signal-card-top">
-                      <span className={`external-pill ${signal.status}`}>
-                        {externalStatusLabel[signal.status]}
-                      </span>
-                      <strong>{signal.provider}</strong>
-                    </div>
-                    <p>{signal.summary}</p>
-                    <div className="signal-focus">
-                      <span>Why it matters</span>
-                      <p>{signal.focus}</p>
-                    </div>
-                    {signal.affected.length > 0 && (
-                      <div className="signal-tags" aria-label={`${signal.provider} affected areas`}>
-                        {signal.affected.map((item) => (
-                          <span key={item}>{item}</span>
-                        ))}
-                      </div>
-                    )}
-                    <a href={signal.sourceUrl} rel="noreferrer" target="_blank">
-                      Open source
-                    </a>
-                  </article>
-                ))}
-              </section>
-
-              <section className="reports-layout">
-                <article className="report-panel">
-                  <div className="panel-heading">
-                    <div>
-                      <p className="eyebrow">How SignalDesk uses it</p>
-                      <h2>Outside signals stay separate from local evidence.</h2>
-                      <p className="panel-note">
-                        The app does not replace the incident details. It adds one
-                        more check so the response owner knows whether a public
-                        service should be reviewed before closing the incident.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="signal-checklist">
-                    <span>1. Review the selected incident.</span>
-                    <span>2. Check sources with Watch, Issue, or Check source.</span>
-                    <span>3. Run Review incident to include the source check.</span>
-                  </div>
-                </article>
-
-                <article className="report-panel">
-                  <div className="panel-heading">
-                    <div>
-                      <p className="eyebrow">Selected incident match</p>
-                      <h2>{selectedIncident.service}</h2>
-                      <p className="panel-note">
-                        {selectedIncident.title} is owned by {selectedIncident.owner}.
-                        If an outside source is not normal, keep that note in the
-                        response plan before changing the status.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="report-summary">
-                    <span>Current read</span>
-                    <strong>{outsideAttentionCount ? "Check outside status" : "Local issue focus"}</strong>
-                    <p>{signalSummary}</p>
-                  </div>
-                </article>
-              </section>
-            </section>
+            <SignalsView signals={signals} signalMode={signalMode} outsideAttentionCount={outsideAttentionCount} signalSummary={signalSummary} selectedIncident={selectedIncident} checkedAt={checkedAt} loading={loading} refresh={refresh} />
           )}
 
           {activeView === "Reports" && (
-            <section className="app-view">
-              <section className="stat-strip" aria-label="Response metrics">
-                {dynamicResponseStats.map((stat) => (
-                  <article key={stat.label}>
-                    <span>{stat.label}</span>
-                    <strong>{stat.value}</strong>
-                    <p>{stat.detail}</p>
-                  </article>
-                ))}
-              </section>
-
-              <section className="reports-layout">
-                <article className="report-panel" aria-labelledby="report-title">
-                  <div className="panel-heading">
-                    <div>
-                      <p className="eyebrow">Reports</p>
-                      <h2 id="report-title">Weekly priority mix</h2>
-                      <p className="panel-note">
-                        A compact read on the kind of work the team is handling.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="severity-report">
-                    {priorityBars.map((bar) => (
-                      <div key={bar.label}>
-                        <span>{bar.label}</span>
-                        <i>
-                          <b style={{ width: `${bar.value}%` }} />
-                        </i>
-                        <strong>{bar.value}%</strong>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-
-                <article className="report-panel">
-                  <div className="panel-heading">
-                    <div>
-                      <p className="eyebrow">Takeaway</p>
-                      <h2>What this report says</h2>
-                      <p className="panel-note">
-                        The team is carrying one critical incident, one high-priority
-                        slowdown, and one medium delay. Noise is low enough to keep
-                        focus on the real customer risks.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="report-summary">
-                    <span>Best focus</span>
-                    <strong>Inventory and checkout</strong>
-                    <p>Clear the critical backlog first, then confirm checkout speed.</p>
-                  </div>
-                </article>
-              </section>
-            </section>
+            <ReportsView dynamicResponseStats={dynamicResponseStats} incidents={incidents} />
           )}
         </section>
       </section>
