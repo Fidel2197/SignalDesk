@@ -1,12 +1,14 @@
 # SignalDesk
 
-Practice an incident response: choose a scenario, review its evidence, follow a runbook, and record progress. SignalDesk also checks real public status reports from GitHub, Vercel, and Cloudflare.
+An incident-response practice workspace built with Next.js, React, and TypeScript. Work through a scenario, follow a runbook, save response progress, and check real public status reports from GitHub, Vercel, and Cloudflare.
 
-## Links
+[![SignalDesk CI](https://github.com/Fidel2197/SignalDesk/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Fidel2197/SignalDesk/actions/workflows/ci.yml)
 
-- [Open SignalDesk](https://signaldesk-pink-two.vercel.app/)
-- [Repository](https://github.com/Fidel2197/SignalDesk)
-- [Automated checks](https://github.com/Fidel2197/SignalDesk/actions)
+[Open app](https://signaldesk-pink-two.vercel.app/) · [Project page](https://fidel-portfolio-eta.vercel.app/signaldesk.html) · [Automated checks](https://github.com/Fidel2197/SignalDesk/actions)
+
+![SignalDesk practice workspace showing incident context, simulated services, and response controls](docs/images/signaldesk-workspace.png)
+
+**Technical highlights:** reusable React views, persistent browser state, server-side API integration, explicit failure handling, and automated tests.
 
 ## Overview
 
